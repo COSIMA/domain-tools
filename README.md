@@ -27,8 +27,15 @@ where *level* is the minimum number of depth levels (e.g. 4).
 Requires `ocean_vgrid.nc` to be present.
 Can produce non-advective cells.
 
-### fix_nonadvective_mosaic
+### check_nonadvective_mosaic
+Check for cells that are nonadvective on a B grid. Doesn't detect choked channels in all cases - use `non-advective.ipynb` (below) to find non-advective edges.
+Usage:
+```bash
+./check_nonadvective_mosaic topog.nc
+```
+Requires `ocean_vgrid.nc` to be present.
 
+### fix_nonadvective_mosaic
 Fix cells that are non-advective on a B grid.
 Usage:
 ```bash

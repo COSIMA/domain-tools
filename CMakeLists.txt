@@ -14,6 +14,9 @@ find_package(NetCDF COMPONENTS Fortran REQUIRED)
 add_executable(deseas src/deseas.f90)
 target_link_libraries(deseas PRIVATE NetCDF::NetCDF_Fortran)
 
+add_executable(check_nonadvective_mosaic src/check_nonadvective_mosaic.f90)
+target_link_libraries(check_nonadvective_mosaic PRIVATE NetCDF::NetCDF_Fortran)
+
 add_executable(fix_nonadvective_mosaic src/fix_nonadvective_mosaic.f90)
 target_link_libraries(fix_nonadvective_mosaic PRIVATE NetCDF::NetCDF_Fortran)
 
@@ -27,6 +30,6 @@ target_link_libraries(min_max_depth PRIVATE NetCDF::NetCDF_Fortran)
 # Installation
 include(GNUInstallDirs)
 
-install(TARGETS deseas fix_nonadvective_mosaic gen_topo min_max_depth
+install(TARGETS deseas check_nonadvective_mosaic fix_nonadvective_mosaic gen_topo min_max_depth
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
