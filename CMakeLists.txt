@@ -6,7 +6,6 @@ project(domain-tools VERSION 0.1.0 LANGUAGES Fortran)
 # Find NetCDF
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-enable_language(C)
 find_package(NetCDF COMPONENTS Fortran REQUIRED)
 
 
