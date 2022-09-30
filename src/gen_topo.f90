@@ -171,7 +171,11 @@ program gen_topo
   ! Now load up spherical grid
 
   call handle_error(nf90_open(trim(topo_file), nf90_nowrite, ncid))
-  call handle_error(nf90_inq_varid(ncid, 'height', hid))
+  ! We will try to read the 'height' variable from the topography file. If it fails try 'elevation'.
+  ! Return error if none is present.
+  if (nf90_inq_varid(ncid, 'height', hid) /= nf90_noerr) then
+    call handle_error(nf90_inq_varid(ncid, 'elevation', hid))
+  end if
   call handle_error(nf90_inquire_variable(ncid, hid, dimids = dids))
   call handle_error(nf90_inquire_dimension(ncid, dids(1), xname, xlen))
   call handle_error(nf90_inquire_dimension(ncid, dids(2), yname, ylen))
