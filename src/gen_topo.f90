@@ -792,8 +792,10 @@ contains
   end subroutine handle_error
     
   recursive subroutine quicksort(a, first, last)
-    real(real32)  a(:), x, t
-    integer first, last
+    real(real32), intent(inout) ::  a(:)
+    integer, intent(in) :: first, last
+
+    real(real32) :: x, t
     integer i, j
 
     x = a((first + last)/2)
