@@ -28,12 +28,12 @@ program gen_topo
   integer(int32) :: dids(2)           ! NetCDF ids
   integer(int32) :: dids_topo(2)           ! NetCDF ids
 
-  real(real64), allocatable, dimension(:,:)   :: wrk, wrk_super
-  real(real64), allocatable, dimension(:,:)   :: x_c, y_c, x_t, y_t, area
-  real(real64), allocatable, dimension(:)     :: xtopo, ytopo, weight, x_rot
-  real(real32), allocatable, dimension(:,:)   :: topo_in, topo_out, topo_all_out,frac
-  real(real32), allocatable, dimension(:,:)   :: topo_med_out, topo_all_med_out
-  integer(int16), allocatable, dimension(:,:) :: itopo_in
+  real(real64), allocatable   :: wrk(:,:), wrk_super(:,:)
+  real(real64), allocatable   :: x_c(:,:), y_c(:,:), x_t(:,:), y_t(:,:), area(:,:)
+  real(real64), allocatable   :: xtopo(:), ytopo(:), weight(:), x_rot(:)
+  real(real32), allocatable   :: topo_in(:,:), topo_out(:,:), topo_all_out(:,:), frac(:,:)
+  real(real32), allocatable   :: topo_med_out(:,:), topo_all_med_out(:,:)
+  integer(int16), allocatable :: itopo_in(:,:)
 
   character(len=128)  :: odir ='', ofile =''  ! for ocean_mosaic.nc
   character(len=128)  :: gdir ='', gfile =''  ! for hgrid file
@@ -344,9 +344,9 @@ contains
 
   subroutine get_range(vals, lower, upper, index_lo, index_hi)
     ! Get all values inside lower to upper
-    real(real64), dimension(:), intent(in) ::vals
-    real(real64), intent(in)               ::lower, upper
-    integer(int32), intent(out)             ::index_lo, index_hi
+    real(real64), intent(in)    :: vals(:)
+    real(real64), intent(in)    :: lower, upper
+    integer(int32), intent(out) ::index_lo, index_hi
 
     integer(int32) :: itmp, imx, imn, its, itsmax = 20
 
@@ -410,29 +410,29 @@ contains
     ! Make topography for a general patch. 
     ! We know that y_out(i,:) is monotonic increasing
     ! We know that x_out(:, j) is monotonic increasing
-    real(real32), dimension(:,:), intent(in) :: topo_in
-    real(real64), dimension(:), intent(in) :: x_in
-    real(real64), dimension(:), intent(in) :: y_in
-    real(real32), dimension(:,:), intent(out) :: topo_out, topo_all_out, frac
-    real(real32), dimension(:,:), intent(out) :: topo_med_out, topo_all_med_out
-    real(real64), dimension(:,:), intent(in) :: x_out
-    real(real64), dimension(:,:), intent(in) :: y_out
+    real(real32), intent(in) :: topo_in(:,:)
+    real(real64), intent(in) :: x_in(:)
+    real(real64), intent(in) :: y_in(:)
+    real(real32), intent(out) :: topo_out(:,:), topo_all_out(:,:), frac(:,:)
+    real(real32), intent(out) :: topo_med_out(:,:), topo_all_med_out(:,:)
+    real(real64), intent(in) :: x_out(:,:)
+    real(real64), intent(in) :: y_out(:,:)
 
-    logical, dimension(:,:), allocatable           :: mask
+    logical, allocatable :: mask(:,:)
 
     integer :: im, it, jm, jt, inext, jnext, itopo, jtopo
 
     ! tree stuff
-    real(kdkind), allocatable, dimension(:,:) :: possie
-    real(kdkind), allocatable, dimension(:)   :: csx, csy, six, siy
-    real(kdkind)                             :: cx(2,2), cy(2,2), cz(2,2)
-    real(kdkind)                             :: t_source(3), xt, yt, rad2
+    real(kdkind), allocatable :: possie(:,:)
+    real(kdkind), allocatable :: csx(:), csy(:), six(:), siy(:)
+    real(kdkind)              :: cx(2,2), cy(2,2), cz(2,2)
+    real(kdkind)              :: t_source(3), xt, yt, rad2
     type(kdtree2), pointer    :: tree
-    type(kdtree2_result), allocatable, dimension(:) :: results
-    real(int32), allocatable, dimension(:) :: idx, jdx
+    type(kdtree2_result), allocatable :: results(:)
+    real(int32), allocatable :: idx(:), jdx(:)
     real(real64), parameter :: DEG2RAD = asin(1.0_real64)/90.0_real64  ! PI/180
     integer(int32)           :: num_found, n, ngd, num_max
-    real(real32), dimension(:), allocatable    :: t_s, t_s_all
+    real(real32), allocatable :: t_s(:), t_s_all(:)
     integer(int32)           :: frst, lst
 
     ! bounding boxes etc.
@@ -613,22 +613,22 @@ contains
   end subroutine make_topo_gen
 
   subroutine make_topo_rect(topo_in, x_in, y_in, topo_out, x_out, y_out, topo_all_out, frac, topo_med_out, topo_all_med_out)
-    real(real32), dimension(:,:), intent(in) :: topo_in
-    real(real64), dimension(:), intent(in) :: x_in
-    real(real64), dimension(:), intent(in) :: y_in
-    real(real32), dimension(:,:), intent(out) :: topo_out, topo_all_out, frac
-    real(real32), dimension(:,:), intent(out) :: topo_med_out, topo_all_med_out
-    real(real64), dimension(:), intent(in) :: x_out
-    real(real64), dimension(:), intent(in) :: y_out
+    real(real32), intent(in) :: topo_in(:,:)
+    real(real64), intent(in) :: x_in(:)
+    real(real64), intent(in) :: y_in(:)
+    real(real32), intent(out) :: topo_out(:,:), topo_all_out(:,:), frac(:,:)
+    real(real32), intent(out) :: topo_med_out(:,:), topo_all_med_out(:,:)
+    real(real64), intent(in) :: x_out(:)
+    real(real64), intent(in) :: y_out(:)
 
     type med_type
-      real(real32), dimension(:), allocatable :: topo
+      real(real32), allocatable :: topo(:)
     end type med_type   
-    type(med_type), allocatable, dimension(:) :: t_s, t_s_all
+    type(med_type), allocatable :: t_s(:), t_s_all(:)
 
-    integer, dimension(:,:), allocatable :: npts, npts_all
+    integer, allocatable :: npts(:,:), npts_all(:,:)
 
-    real(real32), dimension(:), allocatable    :: dummy
+    real(real32), allocatable    :: dummy(:)
     integer(int32)           :: frst, lst
     integer :: im, it, jm, jt, inext, jnext, itopo, jtopo, n
 
