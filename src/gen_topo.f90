@@ -342,68 +342,6 @@ program gen_topo
 
 contains
 
-  subroutine get_range1(vals, lower, upper, index_lo, index_hi)
-    ! Get all values inside lower to upper
-    real(real64), dimension(:), intent(in) ::vals
-    real(real64), intent(in)               ::lower, upper
-    integer(int32), intent(out)             ::index_lo, index_hi
-
-    integer(int32) :: itmp, imx, imn, its, itsmax = 20
-
-    imn = 1
-    imx = size(vals)
-    its = 1
-    if (vals(1) >= lower) then
-      index_lo = 1
-    else
-
-      do
-        its = its + 1
-        index_lo = (imx + imn)/2
-        if (vals(index_lo) > lower) then
-          imx = index_lo
-        else
-          imn = index_lo
-        end if
-        if (imx-imn < 2) then
-          index_lo = imx
-          exit
-        end if
-        if (its > itsmax) then
-          write(*,*) imn, imx, lower, vals(imn), vals(imx)
-          stop 3
-        end if
-      end do
-    end if
-  
-    imn = 1
-    imx = size(vals)
-    index_hi = imx/2
-    its = 1
-    if (vals(imx) <= upper) then
-      index_hi = imx
-    else
-      do
-        its = its + 1
-        index_hi = (imx+ imn + 1)/2
-        if (vals(index_hi) > upper) then
-          imx = index_hi
-        else
-          imn = index_hi
-        end if
-        if (imx - imn < 2) then
-          index_hi = imn
-          exit
-        end if
-        if (its > itsmax) then
-          write(*,*) imn, imx, upper, vals(imn), vals(imx)
-          stop 4
-        end if
-      end do
-    end if
-
-  end subroutine get_range1
-
   subroutine get_range(vals, lower, upper, index_lo, index_hi)
     ! Get all values inside lower to upper
     real(real64), dimension(:), intent(in) ::vals
