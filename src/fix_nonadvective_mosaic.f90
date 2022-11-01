@@ -4,18 +4,18 @@ program fix_nonadvective
   use netcdf
   implicit none
 
-  real, dimension(:,:), allocatable :: topog, topog_halo
-  integer, dimension(:,:), allocatable :: num_levels
-  real, dimension(:), allocatable :: zw, zeta
+  real, allocatable :: topog(:,:), topog_halo(:,:)
+  integer, allocatable :: num_levels(:,:)
+  real, allocatable :: zw(:), zeta(:)
   integer :: ierr, i, j, k, ni, nj, nzeta, nz, its, counter
   integer :: ncid, vid
-  integer, dimension(2) :: dids
+  integer :: dids(2)
   logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
   logical :: changes_made = .false.
   integer :: kse, ksw, kne, knw, kmu_max
   integer :: im, ip, jm, jp
 
-  character*128 :: file_in, file_out
+  character(len=128) :: file_in, file_out
 
   if (command_argument_count() .ne. 2 ) then
     write(*,*) 'ERROR: Wrong number of arguments'
