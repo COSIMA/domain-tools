@@ -19,9 +19,9 @@ program deseas
   integer(int32) :: dids_topo_out(2)        ! NetCDF ids
   integer(int32) :: dids_topo(2)            ! NetCDF ids
 
-  real(real32), allocatable, dimension(:,:)   :: depth
-  integer(int16), allocatable, dimension(:,:) :: sea
-  character*128 :: file_in, file_out
+  real(real32), allocatable   :: depth(:,:)
+  integer(int16), allocatable :: sea(:,:)
+  character(len=128) :: file_in, file_out
 
   real(real32), parameter :: my_miss = -1e30
 
