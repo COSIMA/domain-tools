@@ -11,15 +11,15 @@ program check_nonadvective
 
   integer(int32) :: ierr, i, j, k, ni, nj, nzeta, nz, im, ip, jm, jp
 
-  real(real32), dimension(:,:), allocatable :: topog
-  real(real32), dimension(:), allocatable :: zw, zeta
+  real(real32), allocatable :: topog(:,:)
+  real(real32), allocatable :: zw(:), zeta(:)
 
-  integer(int32), dimension(:,:), allocatable :: num_levels
+  integer(int32), allocatable :: num_levels(:,:)
 
   integer(int32) :: ncid, vid
-  integer(int32), dimension(2) :: dids
+  integer(int32) :: dids(2)
 
-  character*256 :: file_in
+  character(len=256) :: file_in
 
   logical :: se, sw, ne, nw
   integer :: kse, ksw, kne, knw, kmu_max
