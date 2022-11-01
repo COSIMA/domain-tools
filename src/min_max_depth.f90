@@ -22,11 +22,11 @@ program min_max_depth
   integer(int32) :: dids_lev(1)           ! NetCDF ids
   integer(int32) :: zlen                   ! length of zeta array
 
-  real(real32), allocatable, dimension(:,:)   :: depth
+  real(real32), allocatable :: depth(:,:)
   real(real64)  ::  zeta
-  real(real64), dimension(:), allocatable  ::  zeta_arr
+  real(real64), allocatable :: zeta_arr(:)
   real(real32)  :: min_depth, max_depth
-  character*128 :: file_in,file_out,level
+  character(len=128) :: file_in,file_out,level
 
   real(real32), parameter :: missing_value = -1e30
 
