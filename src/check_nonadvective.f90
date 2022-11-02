@@ -7,6 +7,7 @@ program check_nonadvective
   ! check_nodadvective_mosaic file_in
   use iso_fortran_env
   use netcdf
+  use utils
   implicit none
 
   integer(int32) :: ierr, i, j, k, ni, nj, nzeta, nz, im, ip, jm, jp
@@ -187,27 +188,5 @@ program check_nonadvective
       end if
     end if
   end do
-
-contains
-
-  subroutine handle_error(error_flag,isfatal,err_string)
-    ! Simple error handle for NetCDF
-    integer(int32), intent(in) :: error_flag
-    logical, intent(in), optional :: isfatal
-    character(*), intent(in), optional :: err_string
-
-    logical            :: fatal
-
-    fatal = .true.
-    if (present(isfatal)) fatal = isfatal
-    if (error_flag  /= nf90_noerr) then
-      if (fatal) then
-        write(*,*) 'FATAL ERROR:', nf90_strerror(error_flag)
-        if (present(err_string)) write(*,*) trim(err_string)
-        stop
-      end if
-    end if
-
-  end subroutine handle_error
 
 end program check_nonadvective

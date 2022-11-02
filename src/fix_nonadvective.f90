@@ -2,6 +2,7 @@ program fix_nonadvective
   ! Find non advective columns
   ! Write out corrdinates
   use netcdf
+  use utils
   implicit none
 
   real, allocatable :: topog(:,:), topog_halo(:,:)
@@ -27,28 +28,28 @@ program fix_nonadvective
 
   call execute_command_line('/bin/cp '//trim(file_in)//' '//trim(file_out))
 
-  ierr = nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid)
-  ierr = nf90_inq_varid(ncid, 'zeta', vid)
-  ierr = nf90_inquire_variable(ncid, vid, dimids=dids)
-  ierr = nf90_inquire_dimension(ncid, dids(1), len=nzeta)
+  call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid))
+  call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
+  call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
+  call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
   nz = nzeta/2
   write(*,*) 'Zeta dimensions', nzeta, nz
   allocate(zeta(nzeta), zw(0:nz))
-  ierr = nf90_get_var(ncid, vid, zeta)
-  ierr = nf90_close(ncid)
+  call handle_error(nf90_get_var(ncid, vid, zeta))
+  call handle_error(nf90_close(ncid))
   zw(:) = zeta(1:nzeta:2)
 
-  ierr = nf90_open(trim(file_out), nf90_write, ncid)
-  ierr = nf90_inq_varid(ncid,'depth', vid)
-  ierr = nf90_inquire_variable(ncid, vid, dimids=dids)
-  ierr = nf90_inquire_dimension(ncid, dids(1), len=ni)
-  ierr = nf90_inquire_dimension(ncid, dids(2), len=nj)
+  call handle_error(nf90_open(trim(file_out), nf90_write, ncid))
+  call handle_error(nf90_inq_varid(ncid,'depth', vid))
+  call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
+  call handle_error(nf90_inquire_dimension(ncid, dids(1), len=ni))
+  call handle_error(nf90_inquire_dimension(ncid, dids(2), len=nj))
   write(*,*) 'depth dimensions', ni, nj
   allocate(topog(ni, nj))
   allocate(topog_halo(0:ni+1, nj+1))
   allocate(num_levels(0:ni+1, nj+1))
 
-  ierr = nf90_get_var(ncid, vid, topog)
+  call handle_error(nf90_get_var(ncid, vid, topog))
   do its = 1, 20
     counter = 0
     num_levels = 0
@@ -117,13 +118,13 @@ program fix_nonadvective
     topog = topog_halo(1:ni, 1:nj)
     if (counter == 0) exit
   end do
-  ierr = nf90_redef(ncid)
-  ierr = nf90_put_att(ncid, vid, 'nonadvective_cells_removed', 'yes')
+  call handle_error(nf90_redef(ncid))
+  call handle_error(nf90_put_att(ncid, vid, 'nonadvective_cells_removed', 'yes'))
   if (changes_made) then
     ierr=nf90_put_att(ncid, vid, 'lakes_removed', 'no')
   end if
-  ierr = nf90_enddef(ncid)
-  ierr = nf90_put_var(ncid, vid, topog)
-  ierr = nf90_close(ncid)
+  call handle_error(nf90_enddef(ncid))
+  call handle_error(nf90_put_var(ncid, vid, topog))
+  call handle_error(nf90_close(ncid))
 
 end program fix_nonadvective
