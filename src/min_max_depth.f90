@@ -28,7 +28,7 @@ program min_max_depth
   real(real32)  :: min_depth, max_depth
   character(len=128) :: file_in,file_out,level
 
-  real(real32), parameter :: missing_value = -1e30
+  real(real32), parameter :: MISSING_VALUE = -1e30
 
   if (command_argument_count() /= 3) then
     write(*,*) 'ERROR: Incorrect number of arguments'
@@ -75,7 +75,7 @@ program min_max_depth
       if (depth(i, j) > 0.0) then
         depth(i, j) = min(max(depth(i, j), min_depth), max_depth)
       else
-        depth(i, j) = missing_value
+        depth(i, j) = MISSING_VALUE
       end if
     end do
   end do
@@ -85,7 +85,7 @@ program min_max_depth
   call handle_error(nf90_def_dim(ncid_out, 'yy', nyt,dids_topo_out(2)))
   call handle_error(nf90_def_var(ncid_out, 'depth', nf90_float, dids_topo_out, depth_id_out, chunksizes=[nxt/10, nyt/10], &
     deflate_level=1, shuffle=.true.))
-  call handle_error(nf90_put_att(ncid_out, depth_id_out, 'missing_value', missing_value))
+  call handle_error(nf90_put_att(ncid_out, depth_id_out, 'MISSING_VALUE', MISSING_VALUE))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'long_name', 'depth'))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'units', 'm'))
   call handle_error(nf90_put_att(ncid_out, depth_id,'lakes_removed', 'yes'))
