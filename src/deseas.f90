@@ -196,7 +196,7 @@ program deseas
   end do
 
 
-  print *, 'Wring'
+  write(*,*) 'Wring'
   call handle_error(nf90_create(trim(file_out), ior(nf90_netcdf4, nf90_clobber), ncid_out))
   call handle_error(nf90_def_dim(ncid_out, 'xx', nxt, dids_topo_out(1)))
   call handle_error(nf90_def_dim(ncid_out, 'yy', nyt,dids_topo_out(2)))
@@ -208,7 +208,7 @@ program deseas
   call handle_error(nf90_put_att(ncid_out, nf90_global, 'original_file', trim(file_in)))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'lakes_removed', 'yes'))
   call handle_error(nf90_enddef(ncid_out))
-  print *, 'putting'
+  write(*,*) 'putting'
   call handle_error(nf90_put_var(ncid_out, depth_id_out, depth))
   call handle_error(nf90_close(ncid_out))
 

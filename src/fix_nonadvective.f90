@@ -32,7 +32,7 @@ program fix_nonadvective
   ierr = nf90_inquire_variable(ncid, vid, dimids=dids)
   ierr = nf90_inquire_dimension(ncid, dids(1), len=nzeta)
   nz = nzeta/2
-  print *, 'Zeta dimensions', nzeta, nz
+  write(*,*) 'Zeta dimensions', nzeta, nz
   allocate(zeta(nzeta), zw(0:nz))
   ierr = nf90_get_var(ncid, vid, zeta)
   ierr = nf90_close(ncid)
@@ -43,7 +43,7 @@ program fix_nonadvective
   ierr = nf90_inquire_variable(ncid, vid, dimids=dids)
   ierr = nf90_inquire_dimension(ncid, dids(1), len=ni)
   ierr = nf90_inquire_dimension(ncid, dids(2), len=nj)
-  print *, 'depth dimensions', ni, nj
+  write(*,*) 'depth dimensions', ni, nj
   allocate(topog(ni, nj))
   allocate(topog_halo(0:ni+1, nj+1))
   allocate(num_levels(0:ni+1, nj+1))
@@ -88,7 +88,7 @@ program fix_nonadvective
       end do
     end do
 
-    print *, '1', counter
+    write(*,*) '1', counter
 
     do j = 2, nj
       jm = j - 1
@@ -113,7 +113,7 @@ program fix_nonadvective
       end do
     end do
     if (counter > 0) changes_made = .true.
-    print *,counter
+    write(*,*) counter
     topog = topog_halo(1:ni, 1:nj)
     if (counter == 0) exit
   end do

@@ -215,7 +215,7 @@ program gen_topo
   xt_delta = (xtopo(xlen) - xtopo(1))/(xlen - 1)
 
   jstart = nint((y_c(1, 1) - ytopo(1))/yt_delta) + 1
-  print *, 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
+  write(*,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
 
   !
   call handle_error(nf90_create('topog_new.nc', ior(nf90_netcdf4, nf90_clobber), ncid_topo))

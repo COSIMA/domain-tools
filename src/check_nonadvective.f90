@@ -48,8 +48,8 @@ program check_nonadvective
   call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
 
   nz = nzeta/2
-  print *, 'depth dimensions', ni, nj
-  print *, 'Zeta dimensions', nzeta, nz
+  write(*,*) 'depth dimensions', ni, nj
+  write(*,*) 'Zeta dimensions', nzeta, nz
 
   allocate(zeta(nzeta), zw(0:nz))
 
