@@ -13,6 +13,7 @@ program gen_topo
   !
   use iso_fortran_env
   use netcdf
+  use utils
   implicit none
 
   integer(int32) :: i, j, k
@@ -771,26 +772,6 @@ contains
 
   end function pnt_in_quad
 
-  subroutine handle_error(error_flag, isfatal, err_string)
-    ! Simple error handle for NetCDf
-    integer(int32), intent(in) :: error_flag
-    logical, intent(in), optional :: isfatal
-    character(*), intent(in), optional :: err_string
-
-    logical :: fatal
-
-    fatal = .true.
-    if (present(isfatal)) fatal = isfatal
-    if ( error_flag  /= nf90_noerr ) then
-      if ( fatal ) then
-        write(*,*) 'FATAL ERROR:', nf90_strerror(error_flag)
-        if (present(err_string)) write(*,*) trim(err_string)
-        stop
-      end if
-    end if
-
-  end subroutine handle_error
-    
   recursive subroutine quicksort(a, first, last)
     real(real32), intent(inout) ::  a(:)
     integer, intent(in) :: first, last
