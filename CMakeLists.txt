@@ -8,11 +8,15 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 find_package(NetCDF COMPONENTS Fortran REQUIRED)
 
-# Library target
+# Library targets
 add_library(utils
         src/utils.f90
 )
 target_link_libraries(utils PRIVATE NetCDF::NetCDF_Fortran)
+
+add_library(M_CLI2
+  external/M_CLI2/src/M_CLI2.F90
+)
 
 # Executables
 add_executable(deseas src/deseas.f90)
