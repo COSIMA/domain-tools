@@ -3,6 +3,7 @@ program fix_nonadvective
   ! Write out corrdinates
   use netcdf
   use utils
+  use M_CLI2
   implicit none
 
   real, allocatable :: topog(:,:), topog_halo(:,:)
@@ -16,15 +17,24 @@ program fix_nonadvective
   integer :: kse, ksw, kne, knw, kmu_max
   integer :: im, ip, jm, jp
 
-  character(len=128) :: file_in, file_out
+  character(len=:), allocatable :: file_in, file_out
 
-  if (command_argument_count() .ne. 2 ) then
-    write(*,*) 'ERROR: Wrong number of arguments'
-    write(*,*) 'Usage:  deseas file_in file_out'
+  ! Parse command line arguments
+  call set_args('--input:i "unset" --output:o "unset"')
+
+  file_in = sget('input')
+  file_out = sget('output')
+
+  ! Sanity checks
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
     stop
-  endif
-  call get_command_argument(1, file_in)
-  call get_command_argument(2, file_out)
+  else if (file_out == 'unset') then
+    write(*,*) 'ERROR: no output file specified'
+    stop
+  end if
+
+  call check_file_exist(file_in)
 
   call execute_command_line('/bin/cp '//trim(file_in)//' '//trim(file_out))
 
