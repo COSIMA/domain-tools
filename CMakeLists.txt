@@ -10,7 +10,7 @@ find_package(NetCDF COMPONENTS Fortran REQUIRED)
 
 # Library targets
 add_library(utils
-        src/utils.f90
+  src/utils.f90
 )
 target_link_libraries(utils PRIVATE NetCDF::NetCDF_Fortran)
 
@@ -20,7 +20,7 @@ add_library(M_CLI2
 
 # Executables
 add_executable(deseas src/deseas.f90)
-target_link_libraries(deseas PRIVATE NetCDF::NetCDF_Fortran utils)
+target_link_libraries(deseas PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
 add_executable(check_nonadvective src/check_nonadvective.f90)
 target_link_libraries(check_nonadvective PRIVATE NetCDF::NetCDF_Fortran utils)
