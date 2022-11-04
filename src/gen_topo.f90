@@ -14,6 +14,7 @@ program gen_topo
   use iso_fortran_env
   use netcdf
   use utils
+  use M_CLI2
   implicit none
 
   integer(int32) :: i, j, k
@@ -36,13 +37,10 @@ program gen_topo
   real(real32), allocatable   :: topo_med_out(:,:), topo_all_med_out(:,:)
   integer(int16), allocatable :: itopo_in(:,:)
 
-  character(len=128)  :: odir ='', ofile =''  ! for ocean_mosaic.nc
-  character(len=128)  :: gdir ='', gfile =''  ! for hgrid file
-  character(len=256)  :: dirfile =''        ! concatenation
-  character(len=256)  :: topo_file =''      !
+  character(len=:), allocatable  :: topo_file, out_file, grid_file
   character(len=16)   :: xname, yname
 
-  logical             :: fexist = .false., istripolar = .true.
+  logical             :: istripolar = .true.
 
   integer(int32)      :: x_cyc, j_lat
   real(real64)        :: x_shift
@@ -64,48 +62,35 @@ program gen_topo
   real(real64) :: xt_start, xt_delta
   real(real64) :: yt_start, yt_delta
 
-  ! Get info on the grid from input
+  ! Parse command line arguments
+  call set_args('--grid:g "unset" --topography:t "unset" --output:o "unset" --tripolar F')
 
-  write(*,*) 'Getting model grid info'
-  ! Get mosaic info
-  inquire(file =trim('mosaic.nc'), exist =fexist)
-  if (.not. fexist) then
-    write(*,*) 'mosaic.nc does not exist. Bailing out'
-    stop 1
+  grid_file = sget('grid')
+  topo_file = sget('topography')
+  out_file = sget('output')
+  istripolar = lget('tripolar')
+
+  ! Sanity checks
+  if (grid_file == 'unset') then
+    write(*,*) 'ERROR: no grid file specified'
+    stop
+  else if (topo_file == 'unset') then
+    write(*,*) 'ERROR: no topography file specified'
+    stop
+  else if (out_file == 'unset') then
+    write(*,*) 'ERROR: no output file specified'
+    stop
   end if
-  call handle_error(nf90_open('mosaic.nc', nf90_nowrite, ncid))
-  call handle_error(nf90_inq_varid(ncid, 'ocn_mosaic_dir', vid))
-  call handle_error(nf90_get_var(ncid, vid, odir))
-  call handle_error(nf90_inq_varid(ncid,'ocn_mosaic_file', vid))
-  call handle_error(nf90_get_var(ncid, vid, ofile))
-  call handle_error(nf90_close(ncid))
-  ! Get horizontal grid
-  dirfile = odir(1:scan(odir, '/', back =.true.)) // ofile(1:scan(ofile,'c', back =.true.))
-  write(*,*) len_trim(dirfile), dirfile
-  inquire(file = trim(dirfile), exist = fexist)
-  if (.not. fexist) then
-    write(*,*) 'ocn_mosaic_dir/ocn_mosaic_file =', trim(dirfile), ' does not exist. Bailing out'
-    stop 1
-  end if
-  call handle_error(nf90_open(trim(dirfile), nf90_nowrite, ncid))
-  call handle_error(nf90_inq_varid(ncid,'gridlocation', vid))
-  call handle_error(nf90_get_var(ncid, vid, gdir))
-  call handle_error(nf90_inq_varid(ncid,'gridfiles', vid))
-  call handle_error(nf90_get_var(ncid, vid, gfile))
-  call handle_error(nf90_close(ncid))
+
+  call check_file_exist(topo_file)
+  call check_file_exist(grid_file)
 
   !
   ! On mosaic "supergrid" we need to get every second point
   !
   write(*,*) 'Reading supergrid info'
   ! Read xt
-  dirfile = gdir(1:scan(gdir, '/', back =.true.)) // gfile(1:scan(gfile, 'c', back =.true.))
-  inquire(file = trim(dirfile), exist = fexist)
-  if ( .not. fexist ) then
-    write(*,*) 'gridlocation/gridfiles =', trim(dirfile), ' does not exist. Bailing out'
-    stop 1
-  end if
-  call handle_error(nf90_open(trim(dirfile), nf90_nowrite, ncid))
+  call handle_error(nf90_open(trim(grid_file), nf90_nowrite, ncid))
   call handle_error(nf90_inq_dimid(ncid, 'nx', did))
   call handle_error(nf90_inquire_dimension(ncid, did, len=nx))
   nxp = nx + 1
@@ -185,9 +170,6 @@ program gen_topo
 
   ! Now load up spherical grid
 
-  !topo_file ='/home/datalib/bathymetry/GEBCO_2008/gebco_08_2d.nc'
-  !topo_file ='gebco_08_2d_rot.nc'
-  topo_file ='gebco_2014_rot.nc'
   call handle_error(nf90_open(trim(topo_file), nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'height', hid))
   call handle_error(nf90_inquire_variable(ncid, hid, dimids = dids))
@@ -219,7 +201,7 @@ program gen_topo
   write(*,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
 
   !
-  call handle_error(nf90_create('topog_new.nc', ior(nf90_netcdf4, nf90_clobber), ncid_topo))
+  call handle_error(nf90_create(out_file, ior(nf90_netcdf4, nf90_clobber), ncid_topo))
   call handle_error(nf90_def_dim(ncid_topo, 'nx', nxt, dids_topo(1)))
   call handle_error(nf90_def_dim(ncid_topo, 'ny', nyt, dids_topo(2)))
   call handle_error(nf90_def_var(ncid_topo, 'depth', nf90_float, dids_topo, depth_id))
