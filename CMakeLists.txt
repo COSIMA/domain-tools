@@ -32,7 +32,7 @@ add_executable(gen_topo src/kdtree2.f90 src/gen_topo.f90)
 target_link_libraries(gen_topo PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
 add_executable(min_max_depth src/min_max_depth.f90)
-target_link_libraries(min_max_depth PRIVATE NetCDF::NetCDF_Fortran utils)
+target_link_libraries(min_max_depth PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
 
 # Installation

@@ -9,6 +9,7 @@ program min_max_depth
   use iso_fortran_env
   use netcdf
   use utils
+  use M_CLI2
   implicit none
 
   integer(int32) :: i,j,min_level
@@ -27,19 +28,27 @@ program min_max_depth
   real(real64)  ::  zeta
   real(real64), allocatable :: zeta_arr(:)
   real(real32)  :: min_depth, max_depth
-  character(len=128) :: file_in,file_out,level
+  character(len=:), allocatable :: file_in, file_out
 
   real(real32), parameter :: MISSING_VALUE = -1e30
 
-  if (command_argument_count() /= 3) then
-    write(*,*) 'ERROR: Incorrect number of arguments'
-    write(*,*) 'Usage: min_depth file_in file_out level'
+  ! Parse command line arguments
+  call set_args('--input:i "unset" --output:o "unset" --level:l 0.0')
+
+  file_in = sget('input')
+  file_out = sget('output')
+  min_level = rget('level')
+
+  ! Sanity checks
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
+    stop
+  else if (file_out == 'unset') then
+    write(*,*) 'ERROR: no output file specified'
+    stop
   end if
 
-  call get_command_argument(1,file_in)
-  call get_command_argument(2,file_out)
-  call get_command_argument(3,level)
-  read(level,*) min_level
+  call check_file_exist(file_in)
 
   ! Get info on the grid from input
   call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid_lev))
