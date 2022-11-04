@@ -25,12 +25,14 @@ program check_nonadvective
   logical :: se, sw, ne, nw
   integer :: kse, ksw, kne, knw, kmu_max
 
+  if (command_argument_count() .ne. 1 ) then
+    write(*,*) 'ERROR:: Must provide a file'
+    stop
+  endif
+
   call get_command_argument(1, file_in)
 
-  if (len_trim(file_in) == 0) then
-    write(*,*) 'ERROR:: Must provide a file'
-    stop 1
-  end if
+  call check_file_exist(file_in)
 
   call handle_error(nf90_open(trim(file_in), nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'depth', vid))
