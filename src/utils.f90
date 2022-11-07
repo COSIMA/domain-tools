@@ -5,6 +5,19 @@ module utils
 
 contains
 
+  subroutine check_file_exist(filename)
+    character(len=*), intent(in) :: filename
+
+    logical fexist
+
+    inquire(file = trim(filename), exist = fexist)
+    if (.not. fexist) then
+      write(*,*) "ERROR: file ", trim(filename), " does not exist."
+      stop
+    end if
+
+  end subroutine check_file_exist
+
   subroutine handle_error(error_flag, isfatal, err_string)
     ! Simple error handle for NetCDF
     integer(int32),   intent(in) :: error_flag

@@ -9,6 +9,7 @@ program deseas
   use iso_fortran_env
   use netcdf
   use utils
+  use M_CLI2
   implicit none
 
   integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock, counter2
@@ -22,20 +23,28 @@ program deseas
 
   real(real32), allocatable   :: depth(:,:)
   integer(int16), allocatable :: sea(:,:)
-  character(len=128) :: file_in, file_out
+  character(len=:), allocatable :: file_in, file_out
 
   real(real32), parameter :: MY_MISS = -1e30
 
   logical :: choke_west, choke_east, choke_north, choke_south
 
-  if (command_argument_count() .ne. 2) then
-    write(*,*) 'ERROR: Wrong number of arguments'
-    write(*,*) 'Usage:  deseas file_in file_out'
+  ! Parse command line arguments
+  call set_args('--input:i "unset" --output:o "unset"')
+
+  file_in = sget('input')
+  file_out = sget('output')
+
+  ! Sanity checks
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
+    stop
+  else if (file_out == 'unset') then
+    write(*,*) 'ERROR: no output file specified'
     stop
   end if
 
-  call get_command_argument(1, file_in)
-  call get_command_argument(2, file_out)
+  call check_file_exist(file_in)
 
   ! Get info on the grid from input
   call handle_error(nf90_open(trim(file_in), nf90_nowrite, ncid_topo))
