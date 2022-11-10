@@ -232,16 +232,15 @@ program gen_topo
       
     write(*,*) 'jmosaic =', jmosaic, ystart, yend, jstart, jend
 
-    istart = 1
     do imosaic = 1, nxt, iblock
       im_end = min(imosaic + iblock - 1, nxt)
       xstart = x_c(imosaic, 1)
       xend = x_c(im_end+1, 1)
 
-      istart = nint((x_c(imosaic, 1) - xtopo(1))/xt_delta) + 1
-      iend = min(nint((x_c(im_end+1,1) - xtopo(1))/xt_delta) + 1, xlen)
-      if (x_c(imosaic, 1) > xtopo(istart)) istart = istart + 1
-      if (x_c(im_end+1, 1) < xtopo(iend)) iend = iend - 1
+      istart = nint((xstart - xtopo(1))/xt_delta) + 1
+      iend = min(nint((xend - xtopo(1))/xt_delta) + 1, xlen)
+      if (xstart > xtopo(istart)) istart = istart + 1
+      if (xend < xtopo(iend)) iend = iend - 1
       write(*,*) 'imosaic =', imosaic, xstart, xend, istart, iend
 
       !do i = istart + 1, xlen-1
@@ -273,9 +272,7 @@ program gen_topo
       call handle_error(nf90_put_var(ncid_topo, frac_id, frac, start=[imosaic, jmosaic], count=[ipoints, jpoints]))
       deallocate(topo_out, topo_in, itopo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
 
-      istart = iend + 1
     end do
-    jstart = jend + 1
   end do
 
   ! Now we need to do the tripolar part
@@ -333,7 +330,7 @@ contains
     ! Get all values inside lower to upper
     real(real64), intent(in)    :: vals(:)
     real(real64), intent(in)    :: lower, upper
-    integer(int32), intent(out) ::index_lo, index_hi
+    integer(int32), intent(out) :: index_lo, index_hi
 
     integer(int32) :: itmp, imx, imn, its, itsmax = 20
 
