@@ -35,7 +35,6 @@ program gen_topo
   real(real64), allocatable   :: xtopo(:), ytopo(:), weight(:), x_rot(:)
   real(real32), allocatable   :: topo_in(:,:), topo_out(:,:), topo_all_out(:,:), frac(:,:)
   real(real32), allocatable   :: topo_med_out(:,:), topo_all_med_out(:,:)
-  integer(int16), allocatable :: itopo_in(:,:)
 
   character(len=:), allocatable  :: topo_file, out_file, grid_file
   character(len=16)   :: xname, yname
@@ -49,7 +48,6 @@ program gen_topo
 
   integer(int32) :: istart, jstart
   integer(int32) :: iend, jend
-  integer(int32) :: icount, jcount
   integer(int32) :: iblock =100, jblock =100
   integer(int32) :: imosaic, jmosaic
   integer(int32) :: im_end, jm_end
@@ -222,12 +220,11 @@ program gen_topo
     ystart = y_c(1, jmosaic)
     yend = y_c(1, jm_end+1)
    
-    jstart = nint((y_c(1, jmosaic) - ytopo(1))/yt_delta) + 1
-    jend = min(nint((y_c(1, jm_end+1) - ytopo(1))/yt_delta) + 1, ylen)
-    if (y_c(1, jmosaic) > ytopo(jstart)) jstart = jstart + 1
-    if (y_c(1, jm_end+1) < ytopo(jend)) jend = jend - 1
+    jstart = nint((ystart - ytopo(1))/yt_delta) + 1
+    jend = min(nint((yend - ytopo(1))/yt_delta) + 1, ylen)
+    if (ystart > ytopo(jstart)) jstart = jstart + 1
+    if (yend < ytopo(jend)) jend = jend - 1
 
-    jcount = jend - jstart + 1
     jpoints = jm_end - jmosaic + 1
       
     write(*,*) 'jmosaic =', jmosaic, ystart, yend, jstart, jend
@@ -248,11 +245,7 @@ program gen_topo
       !  if (xtopo(i+1) >=  xend ) exit
       !end do
 
-      icount = iend - istart + 1
-      allocate(topo_in(icount, jcount))
-      allocate(itopo_in(icount, jcount))
-      call handle_error(nf90_get_var(ncid, hid, itopo_in, start=[istart, jstart], count=[icount, jcount]))
-      topo_in = itopo_in
+      call get_topo_data(ncid, hid, istart, jstart, iend, jend, topo_in)
       ipoints = im_end - imosaic + 1
       write(*,*) ipoints
 
@@ -270,7 +263,7 @@ program gen_topo
       call handle_error(nf90_put_var(ncid_topo, depth_all_med_id, topo_all_med_out, start=[imosaic, jmosaic], &
         count=[ipoints, jpoints]))
       call handle_error(nf90_put_var(ncid_topo, frac_id, frac, start=[imosaic, jmosaic], count=[ipoints, jpoints]))
-      deallocate(topo_out, topo_in, itopo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
+      deallocate(topo_out, topo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
 
     end do
   end do
@@ -295,17 +288,13 @@ program gen_topo
 
       call get_range(xtopo, minx, maxx, istart, iend)
       call get_range(ytopo, miny, maxy, jstart, jend)
-      icount = iend - istart + 1
-      jcount = jend - jstart + 1
-      allocate(topo_in(icount, jcount))
-      allocate(itopo_in(icount, jcount))
       allocate(topo_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_all_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_med_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_all_med_out(imosaic:im_end, jmosaic:jm_end))
       allocate(frac(imosaic:im_end, jmosaic:jm_end))
-      call handle_error(nf90_get_var(ncid, hid, itopo_in, start=[istart, jstart], count=[icount, jcount]))
-      topo_in = itopo_in
+
+      call get_topo_data(ncid, hid, istart, jstart, iend, jend, topo_in)
 
       call make_topo_gen(topo_in, xtopo(istart:iend), ytopo(jstart:jend), topo_out, x_c(imosaic:im_end+1, jmosaic:jm_end+1), &
         y_c(imosaic:im_end+1, jmosaic:jm_end+1), topo_all_out, frac, topo_med_out, topo_all_med_out)
@@ -316,7 +305,7 @@ program gen_topo
       call handle_error(nf90_put_var(ncid_topo, depth_all_med_id, topo_all_med_out, start=[imosaic, jmosaic], &
         count=[ipoints, jpoints]))
       call handle_error(nf90_put_var(ncid_topo, frac_id, frac, start=[imosaic, jmosaic], count=[ipoints, jpoints]))
-      deallocate(topo_out, topo_in, itopo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
+      deallocate(topo_out, topo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
     end do
   end do
 
@@ -325,6 +314,24 @@ program gen_topo
       
 
 contains
+
+  subroutine get_topo_data(ncid, hid, istart, jstart, iend, jend, topo)
+    integer(int32), intent(in) :: ncid, hid
+    integer(int32), intent(in) :: istart, jstart, iend, jend
+    real(real32), allocatable, intent(out) :: topo(:, :)
+
+    integer(int32) :: icount, jcount
+    integer(int16), allocatable :: itopo(:,:)
+
+    icount = iend - istart + 1
+    jcount = jend - jstart + 1
+    allocate(topo(icount, jcount))
+    allocate(itopo(icount, jcount))
+    call handle_error(nf90_get_var(ncid, hid, itopo, start=[istart, jstart], count=[icount, jcount]))
+    topo = itopo
+    deallocate(itopo)
+
+  end subroutine get_topo_data
 
   subroutine get_range(vals, lower, upper, index_lo, index_hi)
     ! Get all values inside lower to upper
