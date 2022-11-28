@@ -25,8 +25,6 @@ program deseas
   integer(int16), allocatable :: sea(:,:)
   character(len=:), allocatable :: file_in, file_out
 
-  real(real32), parameter :: MY_MISS = -1e30
-
   logical :: choke_west, choke_east, choke_north, choke_south
 
   ! Parse command line arguments
@@ -201,7 +199,7 @@ program deseas
   ! Write out new topography
   do j = 1, nyt
     do i = 1, nxt
-      if (sea(i, j) > 0) depth(i, j) = MY_MISS
+      if (sea(i, j) > 0) depth(i, j) = MISSING_VALUE
     end do
   end do
 
@@ -212,7 +210,7 @@ program deseas
   call handle_error(nf90_def_dim(ncid_out, 'yy', nyt,dids_topo_out(2)))
   call handle_error(nf90_def_var(ncid_out, 'depth', nf90_float, dids_topo_out, depth_id_out, chunksizes=[nxt/10, nyt/10], &
     deflate_level=1, shuffle=.true.))
-  call handle_error(nf90_put_att(ncid_out, depth_id_out, 'missing_value', MY_MISS))
+  call handle_error(nf90_put_att(ncid_out, depth_id_out, 'missing_value', MISSING_VALUE))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'long_name', 'depth'))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'units', 'm'))
   call handle_error(nf90_put_att(ncid_out, nf90_global, 'original_file', trim(file_in)))

@@ -30,8 +30,6 @@ program min_max_depth
   real(real32)  :: min_depth, max_depth
   character(len=:), allocatable :: file_in, file_out
 
-  real(real32), parameter :: MISSING_VALUE = -1e30
-
   ! Parse command line arguments
   call set_args('--input:i "unset" --output:o "unset" --level:l 0.0')
 
