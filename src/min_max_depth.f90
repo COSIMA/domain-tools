@@ -66,8 +66,8 @@ program min_max_depth
   write(*,*) 'Setting maximum depth to ', max_depth
 
   call handle_error(nf90_open(trim(file_in), nf90_nowrite, ncid_topo))
-  call handle_error(nf90_inq_dimid(ncid_topo, 'xx', dids_topo(1)))
-  call handle_error(nf90_inq_dimid(ncid_topo, 'yy', dids_topo(2)))
+  call handle_error(nf90_inq_dimid(ncid_topo, 'nx', dids_topo(1)))
+  call handle_error(nf90_inq_dimid(ncid_topo, 'ny', dids_topo(2)))
   call handle_error(nf90_inquire_dimension(ncid_topo, dids_topo(1), len=nxt))
   call handle_error(nf90_inquire_dimension(ncid_topo, dids_topo(2), len=nyt))
   call handle_error(nf90_inq_varid(ncid_topo, 'depth', depth_id))
@@ -89,8 +89,8 @@ program min_max_depth
   end do
 
   call handle_error(nf90_create(trim(file_out), ior(nf90_netcdf4, nf90_clobber), ncid_out))
-  call handle_error(nf90_def_dim(ncid_out, 'xx', nxt,dids_topo_out(1)))
-  call handle_error(nf90_def_dim(ncid_out, 'yy', nyt,dids_topo_out(2)))
+  call handle_error(nf90_def_dim(ncid_out, 'nx', nxt,dids_topo_out(1)))
+  call handle_error(nf90_def_dim(ncid_out, 'ny', nyt,dids_topo_out(2)))
   call handle_error(nf90_def_var(ncid_out, 'depth', nf90_float, dids_topo_out, depth_id_out, chunksizes=[nxt/10, nyt/10], &
     deflate_level=1, shuffle=.true.))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'MISSING_VALUE', MISSING_VALUE))

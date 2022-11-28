@@ -206,8 +206,8 @@ program deseas
 
   write(*,*) 'Wring'
   call handle_error(nf90_create(trim(file_out), ior(nf90_netcdf4, nf90_clobber), ncid_out))
-  call handle_error(nf90_def_dim(ncid_out, 'xx', nxt, dids_topo_out(1)))
-  call handle_error(nf90_def_dim(ncid_out, 'yy', nyt,dids_topo_out(2)))
+  call handle_error(nf90_def_dim(ncid_out, 'nx', nxt, dids_topo_out(1)))
+  call handle_error(nf90_def_dim(ncid_out, 'ny', nyt,dids_topo_out(2)))
   call handle_error(nf90_def_var(ncid_out, 'depth', nf90_float, dids_topo_out, depth_id_out, chunksizes=[nxt/10, nyt/10], &
     deflate_level=1, shuffle=.true.))
   call handle_error(nf90_put_att(ncid_out, depth_id_out, 'missing_value', MISSING_VALUE))
@@ -221,8 +221,8 @@ program deseas
   call handle_error(nf90_close(ncid_out))
 
   call handle_error(nf90_create(trim('sea_num'), ior(nf90_netcdf4, nf90_clobber), ncid_out))
-  call handle_error(nf90_def_dim(ncid_out, 'xx', nxt, dids_topo_out(1)))
-  call handle_error(nf90_def_dim(ncid_out, 'yy', nyt, dids_topo_out(2)))
+  call handle_error(nf90_def_dim(ncid_out, 'nx', nxt, dids_topo_out(1)))
+  call handle_error(nf90_def_dim(ncid_out, 'ny', nyt, dids_topo_out(2)))
   call handle_error(nf90_def_var(ncid_out, 'sea_num', nf90_short, dids_topo_out, depth_id_out, chunksizes=[nxt/10, nyt/10], &
     deflate_level=1, shuffle=.true.))
   call handle_error(nf90_enddef(ncid_out))
