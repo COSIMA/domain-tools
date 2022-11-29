@@ -11,6 +11,9 @@ module topography
     ! Depth variable and attributes
     real(real32), allocatable :: depth(:,:)
     character(len=3) :: lakes_removed = "no "
+    real(real32) :: min_depth = -1.0
+    integer :: min_level = 0
+    real(real32) :: max_depth = -1.0
     ! Fraction of cell covered by water variable
     real(real32), allocatable :: frac(:,:)
     ! Global attributes
@@ -50,6 +53,9 @@ contains
     call handle_error(nf90_inq_varid(ncid, 'depth', depth_id))
     call handle_error(nf90_get_var(ncid, depth_id, topog%depth))
     call handle_error(nf90_get_att(ncid, depth_id, 'lakes_removed', topog%lakes_removed), isfatal=.false.)
+    call handle_error(nf90_get_att(ncid, depth_id, 'minimum_depth', topog%min_depth), isfatal=.false.)
+    call handle_error(nf90_get_att(ncid, depth_id, 'minimum_levels', topog%min_level), isfatal=.false.)
+    call handle_error(nf90_get_att(ncid, depth_id, 'maximum_depth', topog%max_depth), isfatal=.false.)
 
     ! Get fraction of water
     call handle_error(nf90_inq_varid(ncid, 'frac', frac_id))
@@ -72,6 +78,9 @@ contains
     ! Depth variable and attributes
     allocate(topog_out%depth, source=topog_in%depth)
     topog_out%lakes_removed = topog_in%lakes_removed
+    topog_out%min_depth = topog_in%min_depth
+    topog_out%min_level = topog_in%min_level
+    topog_out%max_depth = topog_in%max_depth
 
     ! Fraction of cell covered by water variable
     allocate(topog_out%frac, source=topog_in%frac)
@@ -103,6 +112,13 @@ contains
     call handle_error(nf90_put_att(ncid, depth_id, 'long_name', 'depth'))
     call handle_error(nf90_put_att(ncid, depth_id, 'units', 'm'))
     call handle_error(nf90_put_att(ncid, depth_id, 'lakes_removed', this%lakes_removed))
+    if (this%min_depth > 0.0) then
+      call handle_error(nf90_put_att(ncid, depth_id, 'minimum_depth', this%min_depth))
+      call handle_error(nf90_put_att(ncid, depth_id, 'minimum_levels', this%min_level))
+    end if
+    if (this%max_depth > 0.0) then
+      call handle_error(nf90_put_att(ncid, depth_id, 'maximum_depth', this%max_depth))
+    end if
     call handle_error(nf90_put_var(ncid, depth_id, this%depth))
 
     ! Write frac
