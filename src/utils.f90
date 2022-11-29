@@ -3,6 +3,9 @@ module utils
   use netcdf
   implicit none
 
+  real(real32), parameter :: MISSING_VALUE = -1e30
+
+
 contains
 
   subroutine check_file_exist(filename)

@@ -11,6 +11,7 @@ find_package(NetCDF COMPONENTS Fortran REQUIRED)
 # Library targets
 add_library(utils
   src/utils.f90
+  src/topography.f90
 )
 target_link_libraries(utils PRIVATE NetCDF::NetCDF_Fortran)
 
