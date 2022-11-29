@@ -208,7 +208,7 @@ program gen_topo
   call handle_error(nf90_def_var(ncid_topo, 'depth_all', nf90_float, dids_topo, depth_all_id))
   call handle_error(nf90_def_var(ncid_topo, 'depth_med', nf90_float, dids_topo, depth_med_id))
   call handle_error(nf90_def_var(ncid_topo, 'depth_all_med', nf90_float, dids_topo, depth_all_med_id))
-  call handle_error(nf90_def_var(ncid_topo, 'frac', nf90_float, dids_topo, frac_id))
+  call handle_error(nf90_def_var(ncid_topo, 'sea_area_fraction', nf90_float, dids_topo, frac_id))
   call handle_error(nf90_enddef(ncid_topo))
 
   ! Do 
