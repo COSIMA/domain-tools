@@ -3,10 +3,11 @@ program fix_nonadvective
   ! Write out corrdinates
   use netcdf
   use utils
+  use topography
   use M_CLI2
   implicit none
 
-  real, allocatable :: topog(:,:), topog_halo(:,:)
+  real, allocatable :: depth_halo(:,:)
   integer, allocatable :: num_levels(:,:)
   real, allocatable :: zw(:), zeta(:)
   integer :: ierr, i, j, k, ni, nj, nzeta, nz, its, counter
@@ -18,6 +19,7 @@ program fix_nonadvective
   integer :: im, ip, jm, jp
 
   character(len=:), allocatable :: file_in, file_out
+  type(topography_t) :: topog
 
   ! Parse command line arguments
   call set_args('--input:i "unset" --output:o "unset"')
@@ -35,8 +37,7 @@ program fix_nonadvective
   end if
 
   call check_file_exist(file_in)
-
-  call execute_command_line('/bin/cp '//trim(file_in)//' '//trim(file_out))
+  topog = topography_t(file_in)
 
   call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
@@ -49,31 +50,24 @@ program fix_nonadvective
   call handle_error(nf90_close(ncid))
   zw(:) = zeta(1:nzeta:2)
 
-  call handle_error(nf90_open(trim(file_out), nf90_write, ncid))
-  call handle_error(nf90_inq_varid(ncid,'depth', vid))
-  call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
-  call handle_error(nf90_inquire_dimension(ncid, dids(1), len=ni))
-  call handle_error(nf90_inquire_dimension(ncid, dids(2), len=nj))
-  write(*,*) 'depth dimensions', ni, nj
-  allocate(topog(ni, nj))
-  allocate(topog_halo(0:ni+1, nj+1))
-  allocate(num_levels(0:ni+1, nj+1))
+  write(*,*) 'depth dimensions', topog%nxt, topog%nyt
+  allocate(depth_halo(0:topog%nxt+1, topog%nyt+1))
+  allocate(num_levels(0:topog%nxt+1, topog%nyt+1))
 
-  call handle_error(nf90_get_var(ncid, vid, topog))
   do its = 1, 20
     counter = 0
     num_levels = 0
 
-    topog_halo = 0
-    topog_halo(1:ni, 1:nj) = topog
-    topog_halo(0, 1:nj) = topog(ni, :)
-    topog_halo(ni+1, 1:nj)=topog(1, :)
-    topog_halo(1:ni, nj+1) = topog(ni:1:-1, nj)
-    do j = 1, nj + 1
-      do i = 0, ni + 1
-        if (topog_halo(i, j) > 0.0) then
+    depth_halo = 0
+    depth_halo(1:topog%nxt, 1:topog%nyt) = topog%depth
+    depth_halo(0, 1:topog%nyt) = topog%depth(topog%nxt, :)
+    depth_halo(topog%nxt+1, 1:topog%nyt)=topog%depth(1, :)
+    depth_halo(1:topog%nxt, topog%nyt+1) = topog%depth(topog%nxt:1:-1, topog%nyt)
+    do j = 1, topog%nyt + 1
+      do i = 0, topog%nxt + 1
+        if (depth_halo(i, j) > 0.0) then
           kloop: do k = 2, nz
-            if (zw(k) >= topog_halo(i, j)) then
+            if (zw(k) >= depth_halo(i, j)) then
               num_levels(i, j) = k
               exit kloop
             end if
@@ -82,15 +76,16 @@ program fix_nonadvective
       end do
     end do
 
-    do j = 2, nj - 1
-      do i = 1, ni
-        if (topog_halo(i, j) > 0.5) then
-          sw = topog_halo(i-1, j) < 0.5 .or. topog_halo(i-1, j-1) < 0.5 .or. topog_halo(i, j-1) < 0.5
-          se = topog_halo(i, j-1) < 0.5 .or. topog_halo(i+1, j-1) < 0.5 .or. topog_halo(i+1, j) < 0.5
-          ne = topog_halo(i+1, j) < 0.5 .or. topog_halo(i, j+1) < 0.5 .or. topog_halo(i+1, j+1) < 0.5
-          nw = topog_halo(i-1, j) < 0.5 .or. topog_halo(i-1, j+1) < 0.5 .or. topog_halo(i, j+1) < 0.5
+    do j = 2, topog%nyt - 1
+      do i = 1, topog%nxt
+        if (depth_halo(i, j) > 0.5) then
+          sw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j-1) < 0.5 .or. depth_halo(i, j-1) < 0.5
+          se = depth_halo(i, j-1) < 0.5 .or. depth_halo(i+1, j-1) < 0.5 .or. depth_halo(i+1, j) < 0.5
+          ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
+          nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
           if (all([se, sw, ne, nw])) then
-            topog_halo(i, j) = 0.0
+            depth_halo(i, j) = 0.0
+            topog%frac(i, j) = 0.0
             num_levels(i, j) = 0
             counter = counter + 1
             write(*,*) i, j, 0.0 ,'  ! nonadvective'
@@ -101,10 +96,10 @@ program fix_nonadvective
 
     write(*,*) '1', counter
 
-    do j = 2, nj
+    do j = 2, topog%nyt
       jm = j - 1
       jp = j + 1
-      do i = 1, ni
+      do i = 1, topog%nxt
         im = i - 1
         ip = i + 1
         if (num_levels(i, j) > 0) then
@@ -117,7 +112,7 @@ program fix_nonadvective
 
           if (num_levels(i, j) > kmu_max) then
             num_levels(i, j) = kmu_max
-            topog_halo(i, j) = zw(kmu_max)
+            depth_halo(i, j) = zw(kmu_max)
             counter = counter + 1
           end if
         end if
@@ -125,16 +120,12 @@ program fix_nonadvective
     end do
     if (counter > 0) changes_made = .true.
     write(*,*) counter
-    topog = topog_halo(1:ni, 1:nj)
+    topog%depth = depth_halo(1:topog%nxt, 1:topog%nyt)
     if (counter == 0) exit
   end do
-  call handle_error(nf90_redef(ncid))
-  call handle_error(nf90_put_att(ncid, vid, 'nonadvective_cells_removed', 'yes'))
-  if (changes_made) then
-    ierr=nf90_put_att(ncid, vid, 'lakes_removed', 'no')
-  end if
-  call handle_error(nf90_enddef(ncid))
-  call handle_error(nf90_put_var(ncid, vid, topog))
-  call handle_error(nf90_close(ncid))
+
+  topog%nonadvective_cells_removed = 'yes'
+  topog%lakes_removed = 'no'
+  call topog%write(file_out)
 
 end program fix_nonadvective

@@ -14,6 +14,7 @@ module topography
     real(real32) :: min_depth = -1.0
     integer :: min_level = 0
     real(real32) :: max_depth = -1.0
+    character(len=3) :: nonadvective_cells_removed = 'yes'
     ! Fraction of cell covered by water variable
     real(real32), allocatable :: frac(:,:)
     ! Global attributes
@@ -56,6 +57,7 @@ contains
     call handle_error(nf90_get_att(ncid, depth_id, 'minimum_depth', topog%min_depth), isfatal=.false.)
     call handle_error(nf90_get_att(ncid, depth_id, 'minimum_levels', topog%min_level), isfatal=.false.)
     call handle_error(nf90_get_att(ncid, depth_id, 'maximum_depth', topog%max_depth), isfatal=.false.)
+    call handle_error(nf90_get_att(ncid, depth_id, 'nonadvective_cells_removed', topog%nonadvective_cells_removed), isfatal=.false.)
 
     ! Get fraction of water
     call handle_error(nf90_inq_varid(ncid, 'frac', frac_id))
@@ -81,6 +83,7 @@ contains
     topog_out%min_depth = topog_in%min_depth
     topog_out%min_level = topog_in%min_level
     topog_out%max_depth = topog_in%max_depth
+    topog_out%nonadvective_cells_removed = topog_in%nonadvective_cells_removed
 
     ! Fraction of cell covered by water variable
     allocate(topog_out%frac, source=topog_in%frac)
@@ -119,6 +122,7 @@ contains
     if (this%max_depth > 0.0) then
       call handle_error(nf90_put_att(ncid, depth_id, 'maximum_depth', this%max_depth))
     end if
+    call handle_error(nf90_put_att(ncid, depth_id, 'nonadvective_cells_removed', this%nonadvective_cells_removed))
     call handle_error(nf90_put_var(ncid, depth_id, this%depth))
 
     ! Write frac
