@@ -1,22 +1,23 @@
 program fix_nonadvective
   ! Find non advective columns
   ! Write out corrdinates
+  use iso_fortran_env
   use netcdf
   use utils
   use topography
   use M_CLI2
   implicit none
 
-  real, allocatable :: depth_halo(:,:)
-  integer, allocatable :: num_levels(:,:)
-  real, allocatable :: zw(:), zeta(:)
-  integer :: ierr, i, j, k, ni, nj, nzeta, nz, its, counter
-  integer :: ncid, vid
-  integer :: dids(2)
+  real(real32), allocatable :: depth_halo(:,:)
+  integer(int32), allocatable :: num_levels(:,:)
+  real(real32), allocatable :: zw(:), zeta(:)
+  integer(int32) :: ierr, i, j, k, ni, nj, nzeta, nz, its, counter
+  integer(int32) :: ncid, vid
+  integer(int32) :: dids(2)
   logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
   logical :: changes_made = .false.
-  integer :: kse, ksw, kne, knw, kmu_max
-  integer :: im, ip, jm, jp
+  integer(int32) :: kse, ksw, kne, knw, kmu_max
+  integer(int32) :: im, ip, jm, jp
 
   character(len=:), allocatable :: file_in, file_out
   type(topography_t) :: topog
