@@ -35,10 +35,13 @@ target_link_libraries(gen_topo PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 add_executable(min_max_depth src/min_max_depth.f90)
 target_link_libraries(min_max_depth PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
+add_executable(topog2mask src/topog2mask.f90)
+target_link_libraries(topog2mask PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
+
 
 # Installation
 include(GNUInstallDirs)
 
-install(TARGETS deseas check_nonadvective fix_nonadvective gen_topo min_max_depth
+install(TARGETS deseas check_nonadvective fix_nonadvective gen_topo min_max_depth topog2mask
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

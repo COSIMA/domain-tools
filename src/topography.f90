@@ -23,6 +23,7 @@ module topography
     procedure :: write => topography_write
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
+    procedure :: mask => topography_mask
   end type topography_t
 
   interface topography_t
@@ -138,5 +139,46 @@ contains
     call handle_error(nf90_enddef(ncid))
 
   end subroutine topography_write
+
+  subroutine topography_mask(this, filename, sea_area_fraction)
+    class(topography_t), intent(in) :: this
+    character(len=*), intent(in) :: filename
+    real(real32), intent(in) :: sea_area_fraction
+
+    integer(int32) :: ncid, mask_id, dids(2) ! NetCDF ids
+    real(real32), allocatable :: mask(:, :)
+
+    write(*,*) "Calculating mask"
+
+    allocate(mask(this%nxt, this%nyt))
+
+    where (this%depth <= 0.0 .or. this%frac < sea_area_fraction) ! Land
+      mask = 0.0
+    elsewhere ! Ocean
+      mask = 1.0
+    end where
+
+    write(*,*) "Writing mask to file '", trim(filename), "'"
+
+    ! Open file
+    call handle_error(nf90_create(trim(filename), ior(nf90_netcdf4, nf90_clobber), ncid))
+
+    ! Write dimensions
+    call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
+    call handle_error(nf90_def_dim(ncid, 'ny', this%nyt, dids(2)))
+
+    ! Write mask
+    call handle_error(nf90_def_var(ncid, 'mask', nf90_float, dids, mask_id, chunksizes=[this%nxt/10, this%nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_put_var(ncid, mask_id, mask))
+
+    call handle_error(nf90_put_att(ncid, nf90_global, 'history', 'Created from topography file '//trim(this%original_file)))
+
+    ! Close file
+    call handle_error(nf90_enddef(ncid))
+
+    deallocate(mask)
+
+  end subroutine topography_mask
 
 end module topography
