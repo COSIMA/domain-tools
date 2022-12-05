@@ -8,6 +8,7 @@ program check_nonadvective
   use iso_fortran_env
   use netcdf
   use utils
+  use M_CLI2
   implicit none
 
   integer(int32) :: ierr, i, j, k, ni, nj, nzeta, nz, im, ip, jm, jp
@@ -20,19 +21,25 @@ program check_nonadvective
   integer(int32) :: ncid, vid
   integer(int32) :: dids(2)
 
-  character(len=256) :: file_in
+  character(len=:), allocatable :: file_in, vgrid
 
   logical :: se, sw, ne, nw
   integer :: kse, ksw, kne, knw, kmu_max
 
-  if (command_argument_count() .ne. 1 ) then
-    write(*,*) 'ERROR:: Must provide a file'
-    stop
-  endif
+  ! Parse command line arguments
+  call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"')
 
-  call get_command_argument(1, file_in)
+  file_in = sget('input')
+  vgrid = sget('vgrid')
+
+  ! Sanity checks
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
+    stop
+  end if
 
   call check_file_exist(file_in)
+  call check_file_exist(vgrid)
 
   call handle_error(nf90_open(trim(file_in), nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'depth', vid))
@@ -45,7 +52,7 @@ program check_nonadvective
 
   call handle_error(nf90_get_var(ncid, vid, topog))
   call handle_error(nf90_close(ncid))
-  call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid))
+  call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
   call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
   call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))

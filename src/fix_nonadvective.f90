@@ -19,14 +19,15 @@ program fix_nonadvective
   integer(int32) :: kse, ksw, kne, knw, kmu_max
   integer(int32) :: im, ip, jm, jp
 
-  character(len=:), allocatable :: file_in, file_out
+  character(len=:), allocatable :: file_in, file_out, vgrid
   type(topography_t) :: topog
 
   ! Parse command line arguments
-  call set_args('--input:i "unset" --output:o "unset"')
+  call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"')
 
   file_in = sget('input')
   file_out = sget('output')
+  vgrid = sget('vgrid')
 
   ! Sanity checks
   if (file_in == 'unset') then
@@ -38,9 +39,11 @@ program fix_nonadvective
   end if
 
   call check_file_exist(file_in)
+  call check_file_exist(vgrid)
+
   topog = topography_t(file_in)
 
-  call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid))
+  call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
   call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
   call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
   call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))

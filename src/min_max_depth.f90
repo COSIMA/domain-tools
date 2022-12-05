@@ -22,15 +22,16 @@ program min_max_depth
 
   real(real64)  ::  zeta
   real(real64), allocatable :: zeta_arr(:)
-  character(len=:), allocatable :: file_in, file_out
+  character(len=:), allocatable :: file_in, file_out, vgrid
 
   type(topography_t) :: topog
 
   ! Parse command line arguments
-  call set_args('--input:i "unset" --output:o "unset" --level:l 0.0')
+  call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level:l 0.0')
 
   file_in = sget('input')
   file_out = sget('output')
+  vgrid = sget('vgrid')
 
   ! Sanity checks
   if (file_in == 'unset') then
@@ -42,12 +43,13 @@ program min_max_depth
   end if
 
   call check_file_exist(file_in)
+  call check_file_exist(vgrid)
 
   ! Get info on the grid from input
   topog = topography_t(file_in)
   topog%min_level = rget('level')
 
-  call handle_error(nf90_open('ocean_vgrid.nc', nf90_nowrite, ncid_lev))
+  call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid_lev))
   call handle_error(nf90_inq_varid(ncid_lev, 'zeta', lev_id))
   call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[2*topog%min_level+1]))
   topog%min_depth = zeta

@@ -24,7 +24,7 @@ add_executable(deseas src/deseas.f90)
 target_link_libraries(deseas PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
 add_executable(check_nonadvective src/check_nonadvective.f90)
-target_link_libraries(check_nonadvective PRIVATE NetCDF::NetCDF_Fortran utils)
+target_link_libraries(check_nonadvective PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
 
 add_executable(fix_nonadvective src/fix_nonadvective.f90)
 target_link_libraries(fix_nonadvective PRIVATE NetCDF::NetCDF_Fortran utils M_CLI2)
