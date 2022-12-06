@@ -14,7 +14,6 @@ module gen_topo_m
   use iso_fortran_env
   use netcdf
   use utils
-  use M_CLI2
   implicit none
 
   private
