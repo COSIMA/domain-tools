@@ -21,7 +21,6 @@ add_library(topography
   src/check_nonadvective.f90
   src/fix_nonadvective.f90
   src/gen_topo.f90
-  src/min_max_depth.f90
   src/kdtree2.f90
 )
 target_link_libraries(topography PRIVATE NetCDF::NetCDF_Fortran

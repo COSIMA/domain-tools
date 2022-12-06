@@ -23,6 +23,7 @@ module topography
     procedure :: write => topography_write
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
+    procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
   end type topography_t
 
@@ -142,6 +143,52 @@ contains
     call handle_error(nf90_enddef(ncid))
 
   end subroutine topography_write
+
+  !-------------------------------------------------------------------------
+  subroutine topography_min_max_depth(this, vgrid, level)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: vgrid
+    integer, intent(in) :: level
+
+    integer(int32) :: i,j
+    integer(int32) :: im,ip,jm,jp
+
+    integer(int32) :: ncid_lev, lev_id           ! NetCDF ids
+    integer(int32) :: dids_lev(1)           ! NetCDF ids
+    integer(int32) :: zlen                   ! length of zeta array
+
+    real(real64)  ::  zeta
+    real(real64), allocatable :: zeta_arr(:)
+
+    this%min_level = level
+
+    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid_lev))
+    call handle_error(nf90_inq_varid(ncid_lev, 'zeta', lev_id))
+    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[2*this%min_level+1]))
+    this%min_depth = zeta
+
+    call handle_error(nf90_inquire_variable(ncid_lev, lev_id, dimids=dids_lev))
+    call handle_error(nf90_inquire_dimension(ncid_lev, dids_lev(1), len=zlen))
+    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[zlen]))
+    this%max_depth = zeta
+
+    call handle_error(nf90_close(ncid_lev))
+
+    write(*,*) 'Setting minimum depth to ', this%min_depth
+    write(*,*) 'Setting maximum depth to ', this%max_depth
+
+    ! Reset depth
+    do j = 1, this%nyt
+      do i = 1, this%nxt
+        if (this%depth(i, j) > 0.0) then
+          this%depth(i, j) = min(max(this%depth(i, j), this%min_depth), this%max_depth)
+        else
+          this%depth(i, j) = MISSING_VALUE
+        end if
+      end do
+    end do
+
+  end subroutine topography_min_max_depth
 
   !-------------------------------------------------------------------------
   subroutine topography_mask(this, filename, sea_area_fraction)

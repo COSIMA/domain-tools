@@ -5,7 +5,6 @@ program topogtools
   use deseas_m
   use fix_nonadvective_m
   use gen_topo_m
-  use min_max_depth_m
   use topography
   implicit none
 
@@ -106,7 +105,9 @@ program topogtools
     call deseas(file_in, file_out)
 
   case ('min_max_depth')
-    call min_max_depth(file_in, file_out, vgrid, iget('level'))
+    topog = topography_t(file_in)
+    call topog%min_max_depth(vgrid, iget('level'))
+    call topog%write(file_out)
 
   case ('fix_nonadvective')
     call fix_nonadvective(file_in, file_out, vgrid)
