@@ -18,7 +18,7 @@ program topogtools
   name = get_subcommand()
   select case (name)
   case ('gen_topo')
-    call set_args('--input:i "unset" --output:o "unset" --hgrid:h "unset" --tripolar:t F --longitude-offset 0.0')
+    call set_args('--input:i "unset" --output:o "unset" --hgrid:h "ocean_hgrid.nc" --tripolar:t F --longitude-offset 0.0')
 
   case ('deseas')
     call set_args('--input:i "unset" --output:o "unset"')
@@ -93,10 +93,6 @@ program topogtools
   select case (name)
   case ('gen_topo')
     hgrid = sget('hgrid')
-    if (hgrid == 'unset') then
-      write(*,*) 'ERROR: no hgrid file specified'
-      stop
-    end if
     call check_file_exist(hgrid)
     call gen_topo(file_in, file_out, hgrid, lget('tripolar'), rget('longitude-offset'))
 
