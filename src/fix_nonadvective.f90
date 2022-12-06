@@ -129,7 +129,9 @@ program fix_nonadvective
   end do
 
   topog%nonadvective_cells_removed = 'yes'
-  topog%lakes_removed = 'no'
+  if (changes_made) then
+    topog%lakes_removed = 'no'
+  end if
   call topog%write(file_out)
 
 end program fix_nonadvective
