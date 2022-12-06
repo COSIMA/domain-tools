@@ -24,6 +24,7 @@ module topography
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
     procedure :: deseas => topography_deseas
+    procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
   end type topography_t
@@ -369,6 +370,128 @@ contains
     end do
 
   end subroutine topography_min_max_depth
+
+  !-------------------------------------------------------------------------
+  subroutine topography_nonadvective(this, vgrid, fix)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: vgrid
+    logical, intent(in) :: fix
+
+    real(real32), allocatable :: depth_halo(:,:)
+    integer(int32), allocatable :: num_levels(:,:)
+    real(real32), allocatable :: zw(:), zeta(:)
+    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, counter
+    integer(int32) :: ncid, vid
+    integer(int32) :: dids(2)
+    logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
+    logical :: changes_made = .false.
+    integer(int32) :: kse, ksw, kne, knw, kmu_max
+    integer(int32) :: im, ip, jm, jp
+
+    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
+    call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
+    call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
+    call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
+    nz = nzeta/2
+    write(*,*) 'Zeta dimensions', nzeta, nz
+    allocate(zeta(nzeta), zw(0:nz))
+    call handle_error(nf90_get_var(ncid, vid, zeta))
+    call handle_error(nf90_close(ncid))
+    zw(:) = zeta(1:nzeta:2)
+
+    write(*,*) 'depth dimensions', this%nxt, this%nyt
+    allocate(depth_halo(0:this%nxt+1, this%nyt+1))
+    allocate(num_levels(0:this%nxt+1, this%nyt+1))
+
+    if (fix) then
+      passes = 20
+    else
+      passes = 1
+    end if
+    do its = 1, passes
+      counter = 0
+      num_levels = 0
+
+      depth_halo = 0
+      depth_halo(1:this%nxt, 1:this%nyt) = this%depth
+      depth_halo(0, 1:this%nyt) = this%depth(this%nxt, :)
+      depth_halo(this%nxt+1, 1:this%nyt)=this%depth(1, :)
+      depth_halo(1:this%nxt, this%nyt+1) = this%depth(this%nxt:1:-1, this%nyt)
+      do j = 1, this%nyt + 1
+        do i = 0, this%nxt + 1
+          if (depth_halo(i, j) > 0.0) then
+            kloop: do k = 2, nz
+              if (zw(k) >= depth_halo(i, j)) then
+                num_levels(i, j) = k
+                exit kloop
+              end if
+            end do kloop
+          end if
+        end do
+      end do
+
+      do j = 2, this%nyt - 1
+        do i = 1, this%nxt
+          if (depth_halo(i, j) > 0.5) then
+            sw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j-1) < 0.5 .or. depth_halo(i, j-1) < 0.5
+            se = depth_halo(i, j-1) < 0.5 .or. depth_halo(i+1, j-1) < 0.5 .or. depth_halo(i+1, j) < 0.5
+            ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
+            nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
+            if (all([se, sw, ne, nw])) then
+              if (fix) then
+                depth_halo(i, j) = 0.0
+                this%frac(i, j) = 0.0
+                num_levels(i, j) = 0
+              end if
+              counter = counter + 1
+              write(*,*) i, j, 0.0 ,'  ! nonadvective'
+            end if
+          end if
+        end do
+      end do
+
+      write(*,*) '1', counter
+
+      do j = 2, this%nyt
+        jm = j - 1
+        jp = j + 1
+        do i = 1, this%nxt
+          im = i - 1
+          ip = i + 1
+          if (num_levels(i, j) > 0) then
+            ksw = minval([num_levels(im, jm), num_levels(i, jm), num_levels(im, j)])
+            kse = minval([num_levels(i, jm), num_levels(ip, jm), num_levels(ip, j)])
+            knw = minval([num_levels(im, j), num_levels(im,jp), num_levels(i, jp)])
+            kne = minval([num_levels(ip, j), num_levels(i,jp), num_levels(ip, jp)])
+
+            kmu_max = maxval([ksw, kse, knw, kne])
+
+            if (num_levels(i, j) > kmu_max) then
+              if (fix) then
+                num_levels(i, j) = kmu_max
+                depth_halo(i, j) = zw(kmu_max)
+              else
+                write(*,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+              end if
+              counter = counter + 1
+            end if
+          end if
+        end do
+      end do
+      if (counter > 0 .and. fix) changes_made = .true.
+      write(*,*) counter
+      this%depth = depth_halo(1:this%nxt, 1:this%nyt)
+      if (counter == 0 .and. fix) exit
+    end do
+
+    if (fix) then
+      this%nonadvective_cells_removed = 'yes'
+      if (changes_made) then
+        this%lakes_removed = 'no'
+      end if
+    end if
+
+  end subroutine topography_nonadvective
 
   !-------------------------------------------------------------------------
   subroutine topography_mask(this, filename, sea_area_fraction)

@@ -2,7 +2,6 @@ program topogtools
   use, intrinsic :: iso_fortran_env
   use M_CLI2
   use check_nonadvective_m
-  use fix_nonadvective_m
   use gen_topo_m
   use topography
   implicit none
@@ -107,7 +106,9 @@ program topogtools
     call topog%write(file_out)
 
   case ('fix_nonadvective')
-    call fix_nonadvective(file_in, file_out, vgrid, fix=.true.)
+    topog = topography_t(file_in)
+    call topog%nonadvective(vgrid, fix=.true.)
+    call topog%write(file_out)
 
   case ('check_nonadvective')
     call check_nonadvective(file_in, vgrid)
