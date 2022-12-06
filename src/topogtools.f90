@@ -2,7 +2,6 @@ program topogtools
   use, intrinsic :: iso_fortran_env
   use M_CLI2
   use check_nonadvective_m
-  use deseas_m
   use fix_nonadvective_m
   use gen_topo_m
   use topography
@@ -102,7 +101,9 @@ program topogtools
     call gen_topo(file_in, file_out, hgrid, lget('tripolar'), rget('longitude-offset'))
 
   case ('deseas')
-    call deseas(file_in, file_out)
+    topog = topography_t(file_in)
+    call topog%deseas()
+    call topog%write(file_out)
 
   case ('min_max_depth')
     topog = topography_t(file_in)
