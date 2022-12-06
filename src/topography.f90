@@ -32,6 +32,7 @@ module topography
 
 contains
 
+  !-------------------------------------------------------------------------
   type(topography_t) function topography_constructor(filename) result(topog)
     character(len=*), intent(in) :: filename
 
@@ -70,6 +71,7 @@ contains
 
   end function topography_constructor
 
+  !-------------------------------------------------------------------------
   subroutine topography_copy(topog_out, topog_in)
     class(topography_t), intent(out) :: topog_out
     class(topography_t), intent(in)  :: topog_in
@@ -94,6 +96,7 @@ contains
 
   end subroutine topography_copy
 
+  !-------------------------------------------------------------------------
   subroutine topography_write(this, filename)
     class(topography_t), intent(in) :: this
     character(len=*), intent(in) :: filename
@@ -140,6 +143,7 @@ contains
 
   end subroutine topography_write
 
+  !-------------------------------------------------------------------------
   subroutine topography_mask(this, filename, sea_area_fraction)
     class(topography_t), intent(in) :: this
     character(len=*), intent(in) :: filename
