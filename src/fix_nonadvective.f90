@@ -10,13 +10,14 @@ module fix_nonadvective_m
 
 contains
 
-  subroutine fix_nonadvective(file_in, file_out, vgrid)
+  subroutine fix_nonadvective(file_in, file_out, vgrid, fix)
     character(len=*), intent(in) :: file_in, file_out, vgrid
+    logical, intent(in) :: fix
 
     real(real32), allocatable :: depth_halo(:,:)
     integer(int32), allocatable :: num_levels(:,:)
     real(real32), allocatable :: zw(:), zeta(:)
-    integer(int32) :: ierr, i, j, k, ni, nj, nzeta, nz, its, counter
+    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, counter
     integer(int32) :: ncid, vid
     integer(int32) :: dids(2)
     logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
@@ -43,7 +44,12 @@ contains
     allocate(depth_halo(0:topog%nxt+1, topog%nyt+1))
     allocate(num_levels(0:topog%nxt+1, topog%nyt+1))
 
-    do its = 1, 20
+    if (fix) then
+      passes = 20
+    else
+      passes = 1
+    end if
+    do its = 1, passes
       counter = 0
       num_levels = 0
 
@@ -73,9 +79,11 @@ contains
             ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
             nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
             if (all([se, sw, ne, nw])) then
-              depth_halo(i, j) = 0.0
-              topog%frac(i, j) = 0.0
-              num_levels(i, j) = 0
+              if (fix) then
+                depth_halo(i, j) = 0.0
+                topog%frac(i, j) = 0.0
+                num_levels(i, j) = 0
+              end if
               counter = counter + 1
               write(*,*) i, j, 0.0 ,'  ! nonadvective'
             end if
@@ -100,24 +108,30 @@ contains
             kmu_max = maxval([ksw, kse, knw, kne])
 
             if (num_levels(i, j) > kmu_max) then
-              num_levels(i, j) = kmu_max
-              depth_halo(i, j) = zw(kmu_max)
+              if (fix) then
+                num_levels(i, j) = kmu_max
+                depth_halo(i, j) = zw(kmu_max)
+              else
+                write(*,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+              end if
               counter = counter + 1
             end if
           end if
         end do
       end do
-      if (counter > 0) changes_made = .true.
+      if (counter > 0 .and. fix) changes_made = .true.
       write(*,*) counter
       topog%depth = depth_halo(1:topog%nxt, 1:topog%nyt)
-      if (counter == 0) exit
+      if (counter == 0 .and. fix) exit
     end do
 
-    topog%nonadvective_cells_removed = 'yes'
-    if (changes_made) then
-      topog%lakes_removed = 'no'
+    if (fix) then
+      topog%nonadvective_cells_removed = 'yes'
+      if (changes_made) then
+        topog%lakes_removed = 'no'
+      end if
+      call topog%write(file_out)
     end if
-    call topog%write(file_out)
 
   end subroutine fix_nonadvective
 

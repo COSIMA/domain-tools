@@ -107,7 +107,7 @@ program topogtools
     call topog%write(file_out)
 
   case ('fix_nonadvective')
-    call fix_nonadvective(file_in, file_out, vgrid)
+    call fix_nonadvective(file_in, file_out, vgrid, fix=.true.)
 
   case ('check_nonadvective')
     call check_nonadvective(file_in, vgrid)
