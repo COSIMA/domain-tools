@@ -17,6 +17,9 @@ module gen_topo_m
   use M_CLI2
   implicit none
 
+  private
+  public :: gen_topo
+
 contains
 
   subroutine gen_topo(topo_file, out_file, grid_file, istripolar, offset)
