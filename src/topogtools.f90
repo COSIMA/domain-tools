@@ -18,22 +18,22 @@ program topogtools
   name = get_subcommand()
   select case (name)
   case ('gen_topo')
-    call set_args('--input:i "unset" --output:o "unset" --hgrid "unset" --tripolar F --longitude-offset 0.0')
+    call set_args('--input:i "unset" --output:o "unset" --hgrid:h "unset" --tripolar:t F --longitude-offset 0.0')
 
   case ('deseas')
     call set_args('--input:i "unset" --output:o "unset"')
 
   case ('min_max_depth')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level:l 0')
+    call set_args('--input:i "unset" --output:o "unset" --vgrid:v "ocean_vgrid.nc" --level:l 0')
 
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"')
+    call set_args('--input:i "unset" --output:o "unset" --vgrid:v "ocean_vgrid.nc"')
 
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"')
+    call set_args('--input:i "unset" --vgrid:v "ocean_vgrid.nc"')
 
   case ('topog2mask')
-    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0')
+    call set_args('--input:i "unset" --output:o "unset" --fraction:f 0.0')
 
   case ('')
     ! general help for "topogtools"
