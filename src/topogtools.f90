@@ -6,12 +6,14 @@ program topogtools
   use fix_nonadvective_m
   use gen_topo_m
   use min_max_depth_m
-  use topog2mask_m
+  use topography
   implicit none
 
   character(len=:), allocatable :: name
   character(len=:), allocatable :: help_text(:)
   character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
+  type(topography_t) :: topog
+  real(real32) :: sea_area_fraction
   integer :: ii
 
   ! Read command line
@@ -32,7 +34,7 @@ program topogtools
   case ('check_nonadvective')
     call set_args('--input:i "unset" --vgrid:v "ocean_vgrid.nc"')
 
-  case ('topog2mask')
+  case ('mask')
     call set_args('--input:i "unset" --output:o "unset" --fraction:f 0.0')
 
   case ('')
@@ -49,7 +51,7 @@ program topogtools
       "  min_max_depth - Set minimum and maximum depth", &
       "  check_nonadvective - Check for cells that are nonadvective", &
       "  fix_nonadvective - Fix cells that are non-advective", &
-      "  topog2mask - Generate mask", &
+      "  mask - Generate mask", &
       "" ]
 
     ! Print help in case the user specified the --help flag
@@ -75,7 +77,7 @@ program topogtools
   call check_file_exist(file_in)
 
   select case (name)
-  case ('gen_topo', 'deseas', 'min_max_depth', 'fix_nonadvective', 'topog2mask')
+  case ('gen_topo', 'deseas', 'min_max_depth', 'fix_nonadvective', 'mask')
     file_out = sget('output')
     if (file_out == 'unset') then
       write(*,*) 'ERROR: no output file specified'
@@ -112,8 +114,14 @@ program topogtools
   case ('check_nonadvective')
     call check_nonadvective(file_in, vgrid)
 
-  case ('topog2mask')
-    call topog2mask(file_in, file_out, rget('fraction'))
+  case ('mask')
+    sea_area_fraction = rget('fraction')
+    if (sea_area_fraction < 0.0 .and. sea_area_fraction > 1.0) then
+      write(*,*) "ERROR: sea area fraction must be between 0 and 1"
+      stop
+    end if
+    topog = topography_t(file_in)
+    call topog%mask(file_out, sea_area_fraction)
 
   end select
 
