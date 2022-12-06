@@ -17,7 +17,6 @@ add_library(M_CLI2
 add_library(topography
   src/utils.f90
   src/topography.f90
-  src/check_nonadvective.f90
   src/gen_topo.f90
   src/kdtree2.f90
 )

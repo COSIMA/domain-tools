@@ -1,7 +1,6 @@
 program topogtools
   use, intrinsic :: iso_fortran_env
   use M_CLI2
-  use check_nonadvective_m
   use gen_topo_m
   use topography
   implicit none
@@ -111,7 +110,8 @@ program topogtools
     call topog%write(file_out)
 
   case ('check_nonadvective')
-    call check_nonadvective(file_in, vgrid)
+    topog = topography_t(file_in)
+    call topog%nonadvective(vgrid, fix=.false.)
 
   case ('mask')
     sea_area_fraction = rget('fraction')
