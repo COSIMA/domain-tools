@@ -31,18 +31,6 @@ contains
 
     type(topography_t) :: topog
 
-    ! Sanity checks
-    if (file_in == 'unset') then
-      write(*,*) 'ERROR: no input file specified'
-      stop
-    else if (file_out == 'unset') then
-      write(*,*) 'ERROR: no output file specified'
-      stop
-    end if
-
-    call check_file_exist(file_in)
-    call check_file_exist(vgrid)
-
     ! Get info on the grid from input
     topog = topography_t(file_in)
     topog%min_level = level

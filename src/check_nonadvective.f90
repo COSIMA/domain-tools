@@ -29,15 +29,6 @@ contains
     logical :: se, sw, ne, nw
     integer :: kse, ksw, kne, knw, kmu_max
 
-    ! Sanity checks
-    if (file_in == 'unset') then
-      write(*,*) 'ERROR: no input file specified'
-      stop
-    end if
-
-    call check_file_exist(file_in)
-    call check_file_exist(vgrid)
-
     call handle_error(nf90_open(trim(file_in), nf90_nowrite, ncid))
     call handle_error(nf90_inq_varid(ncid, 'depth', vid))
     call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))

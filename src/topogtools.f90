@@ -11,34 +11,29 @@ program topogtools
 
   character(len=:), allocatable :: name
   character(len=:), allocatable :: help_text(:)
+  character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
   integer :: ii
 
+  ! Read command line
   name = get_subcommand()
-
   select case (name)
   case ('gen_topo')
     call set_args('--input:i "unset" --output:o "unset" --hgrid "unset" --tripolar F --longitude-offset 0.0')
-    call gen_topo(sget('input'), sget('output'), sget('hgrid'), lget('tripolar'), rget('longitude-offset'))
 
   case ('deseas')
     call set_args('--input:i "unset" --output:o "unset"')
-    call deseas(sget('input'), sget('output'))
 
   case ('min_max_depth')
     call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level:l 0')
-    call min_max_depth(sget('input'), sget('output'), sget('vgrid'), iget('level'))
 
   case ('fix_nonadvective')
     call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"')
-    call fix_nonadvective(sget('input'), sget('output'), sget('vgrid'))
 
   case ('check_nonadvective')
     call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"')
-    call check_nonadvective(sget('input'), sget('vgrid'))
 
   case ('topog2mask')
-    call set_args('--input:i "unset" --mask:m "unset" --fraction 0.0')
-    call topog2mask(sget('input'), sget('mask'), rget('fraction'))
+    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0')
 
   case ('')
     ! general help for "topogtools"
@@ -69,6 +64,57 @@ program topogtools
   case default
     write(*,'(3a)') "topogtools: '", trim(name), "' is not a topogtools subcommand. See 'topogtools --help'."
     stop
+  end select
+
+  ! Sanity checks for common arguments
+  file_in = sget('input')
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
+    stop
+  end if
+  call check_file_exist(file_in)
+
+  select case (name)
+  case ('gen_topo', 'deseas', 'min_max_depth', 'fix_nonadvective', 'topog2mask')
+    file_out = sget('output')
+    if (file_out == 'unset') then
+      write(*,*) 'ERROR: no output file specified'
+      stop
+    end if
+  end select
+
+  select case (name)
+  case ('min_max_depth', 'fix_nonadvective', 'check_nonadvective')
+    vgrid = sget('vgrid')
+    call check_file_exist(vgrid)
+  end select
+
+  ! Run subcommand
+  select case (name)
+  case ('gen_topo')
+    hgrid = sget('hgrid')
+    if (hgrid == 'unset') then
+      write(*,*) 'ERROR: no hgrid file specified'
+      stop
+    end if
+    call check_file_exist(hgrid)
+    call gen_topo(file_in, file_out, hgrid, lget('tripolar'), rget('longitude-offset'))
+
+  case ('deseas')
+    call deseas(file_in, file_out)
+
+  case ('min_max_depth')
+    call min_max_depth(file_in, file_out, vgrid, iget('level'))
+
+  case ('fix_nonadvective')
+    call fix_nonadvective(file_in, file_out, vgrid)
+
+  case ('check_nonadvective')
+    call check_nonadvective(file_in, vgrid)
+
+  case ('topog2mask')
+    call topog2mask(file_in, file_out, rget('fraction'))
+
   end select
 
 end program topogtools

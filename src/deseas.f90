@@ -30,17 +30,6 @@ contains
 
     logical :: choke_west, choke_east, choke_north, choke_south
 
-    ! Sanity checks
-    if (file_in == 'unset') then
-      write(*,*) 'ERROR: no input file specified'
-      stop
-    else if (file_out == 'unset') then
-      write(*,*) 'ERROR: no output file specified'
-      stop
-    end if
-
-    call check_file_exist(file_in)
-
     ! Get info on the grid from input
     topog = topography_t(file_in)
 

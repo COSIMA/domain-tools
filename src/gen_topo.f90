@@ -65,21 +65,6 @@ contains
     real(real64) :: xt_start, xt_delta
     real(real64) :: yt_start, yt_delta
 
-    ! Sanity checks
-    if (grid_file == 'unset') then
-      write(*,*) 'ERROR: no grid file specified'
-      stop
-    else if (topo_file == 'unset') then
-      write(*,*) 'ERROR: no topography file specified'
-      stop
-    else if (out_file == 'unset') then
-      write(*,*) 'ERROR: no output file specified'
-      stop
-    end if
-
-    call check_file_exist(topo_file)
-    call check_file_exist(grid_file)
-
     !
     ! On mosaic "supergrid" we need to get every second point
     !

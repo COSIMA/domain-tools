@@ -13,16 +13,6 @@ contains
     type(topography_t) :: topog
 
     ! Sanity checks
-    if (topog_file == 'unset') then
-      write(*,*) 'ERROR: no topography file specified'
-      stop
-    else if (mask_file == 'unset') then
-      write(*,*) 'ERROR: no mask file specified'
-      stop
-    end if
-
-    call check_file_exist(topog_file)
-
     if (sea_area_fraction < 0.0 .and. sea_area_fraction > 1.0) then
       write(*,*) "ERROR: sea area fraction must be between 0 and 1"
       stop

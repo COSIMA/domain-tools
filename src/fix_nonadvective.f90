@@ -26,18 +26,6 @@ contains
 
     type(topography_t) :: topog
 
-    ! Sanity checks
-    if (file_in == 'unset') then
-      write(*,*) 'ERROR: no input file specified'
-      stop
-    else if (file_out == 'unset') then
-      write(*,*) 'ERROR: no output file specified'
-      stop
-    end if
-
-    call check_file_exist(file_in)
-    call check_file_exist(vgrid)
-
     topog = topography_t(file_in)
 
     call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
