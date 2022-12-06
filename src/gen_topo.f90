@@ -35,21 +35,20 @@ program gen_topo
   real(real64), allocatable   :: xtopo(:), ytopo(:), weight(:), x_rot(:)
   real(real32), allocatable   :: topo_in(:,:), topo_out(:,:), topo_all_out(:,:), frac(:,:)
   real(real32), allocatable   :: topo_med_out(:,:), topo_all_med_out(:,:)
-  integer(int16), allocatable :: itopo_in(:,:)
 
   character(len=:), allocatable  :: topo_file, out_file, grid_file
   character(len=16)   :: xname, yname
 
   logical             :: istripolar = .true.
+  real(real32)        :: offset
+  integer(int32)      :: ishift
 
   integer(int32)      :: x_cyc, j_lat
-  real(real64)        :: x_shift
 
   integer(int32)      :: xlen, ylen
 
   integer(int32) :: istart, jstart
   integer(int32) :: iend, jend
-  integer(int32) :: icount, jcount
   integer(int32) :: iblock =100, jblock =100
   integer(int32) :: imosaic, jmosaic
   integer(int32) :: im_end, jm_end
@@ -63,12 +62,13 @@ program gen_topo
   real(real64) :: yt_start, yt_delta
 
   ! Parse command line arguments
-  call set_args('--grid:g "unset" --topography:t "unset" --output:o "unset" --tripolar F')
+  call set_args('--grid:g "unset" --topography:t "unset" --output:o "unset" --tripolar F --longitude-offset 0.0')
 
   grid_file = sget('grid')
   topo_file = sget('topography')
   out_file = sget('output')
   istripolar = lget('tripolar')
+  offset = dget('longitude-offset')
 
   ! Sanity checks
   if (grid_file == 'unset') then
@@ -171,7 +171,11 @@ program gen_topo
   ! Now load up spherical grid
 
   call handle_error(nf90_open(trim(topo_file), nf90_nowrite, ncid))
-  call handle_error(nf90_inq_varid(ncid, 'height', hid))
+  ! We will try to read the 'height' variable from the topography file. If it fails try 'elevation'.
+  ! Return error if none is present.
+  if (nf90_inq_varid(ncid, 'height', hid) /= nf90_noerr) then
+    call handle_error(nf90_inq_varid(ncid, 'elevation', hid))
+  end if
   call handle_error(nf90_inquire_variable(ncid, hid, dimids = dids))
   call handle_error(nf90_inquire_dimension(ncid, dids(1), xname, xlen))
   call handle_error(nf90_inquire_dimension(ncid, dids(2), yname, ylen))
@@ -182,6 +186,19 @@ program gen_topo
 
   call handle_error(nf90_get_var(ncid, xid, xtopo))
   call handle_error(nf90_get_var(ncid, yid, ytopo))
+
+  ! Sanity checks
+
+  ! Make sure no longitude is > 360 nor < -360 (extremely unlikely to happen,
+  ! but lets be defensive)
+  if (any(xtopo > 360.0) .or. any(xtopo < -360.0)) then
+    write(*,*) "FATAL: topography grid longitude range extends beyond the -360deg to 360deg range"
+    stop
+  end if
+  if (any(x_c > 360.0) .or. any(x_c < -360.0)) then
+    write(*,*) "FATAL: ocean grid longitude range extends beyond the -360deg to 360deg range"
+    stop
+  end if
 
   ! work in patches
 
@@ -199,6 +216,13 @@ program gen_topo
 
   jstart = nint((y_c(1, 1) - ytopo(1))/yt_delta) + 1
   write(*,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
+
+  ! Shift topography grid if requested
+  ishift = nint(offset/xt_delta)
+  if (ishift /= 0) then
+    xtopo = xtopo + offset
+    write(*,*) "Shifted topography longitude grid by ", offset, "(ishift = ", ishift, ")"
+  end if
 
   !
   call handle_error(nf90_create(out_file, ior(nf90_netcdf4, nf90_clobber), ncid_topo))
@@ -218,26 +242,24 @@ program gen_topo
     ystart = y_c(1, jmosaic)
     yend = y_c(1, jm_end+1)
    
-    jstart = nint((y_c(1, jmosaic) - ytopo(1))/yt_delta) + 1
-    jend = min(nint((y_c(1, jm_end+1) - ytopo(1))/yt_delta) + 1, ylen)
-    if (y_c(1, jmosaic) > ytopo(jstart)) jstart = jstart + 1
-    if (y_c(1, jm_end+1) < ytopo(jend)) jend = jend - 1
+    jstart = nint((ystart - ytopo(1))/yt_delta) + 1
+    jend = min(nint((yend - ytopo(1))/yt_delta) + 1, ylen)
+    if (ystart > ytopo(jstart)) jstart = jstart + 1
+    if (yend < ytopo(jend)) jend = jend - 1
 
-    jcount = jend - jstart + 1
     jpoints = jm_end - jmosaic + 1
       
     write(*,*) 'jmosaic =', jmosaic, ystart, yend, jstart, jend
 
-    istart = 1
     do imosaic = 1, nxt, iblock
       im_end = min(imosaic + iblock - 1, nxt)
       xstart = x_c(imosaic, 1)
       xend = x_c(im_end+1, 1)
 
-      istart = nint((x_c(imosaic, 1) - xtopo(1))/xt_delta) + 1
-      iend = min(nint((x_c(im_end+1,1) - xtopo(1))/xt_delta) + 1, xlen)
-      if (x_c(imosaic, 1) > xtopo(istart)) istart = istart + 1
-      if (x_c(im_end+1, 1) < xtopo(iend)) iend = iend - 1
+      istart = nint((xstart - xtopo(1))/xt_delta) + 1
+      iend = min(nint((xend - xtopo(1))/xt_delta) + 1, xlen)
+      if (xstart > xtopo(istart)) istart = istart + 1
+      if (xend < xtopo(iend)) iend = iend - 1
       write(*,*) 'imosaic =', imosaic, xstart, xend, istart, iend
 
       !do i = istart + 1, xlen-1
@@ -245,11 +267,7 @@ program gen_topo
       !  if (xtopo(i+1) >=  xend ) exit
       !end do
 
-      icount = iend - istart + 1
-      allocate(topo_in(icount, jcount))
-      allocate(itopo_in(icount, jcount))
-      call handle_error(nf90_get_var(ncid, hid, itopo_in, start=[istart, jstart], count=[icount, jcount]))
-      topo_in = itopo_in
+      call get_topo_data(ncid, hid, istart, jstart, iend, jend, ishift, xlen, nint(360.0/xt_delta), topo_in)
       ipoints = im_end - imosaic + 1
       write(*,*) ipoints
 
@@ -267,11 +285,9 @@ program gen_topo
       call handle_error(nf90_put_var(ncid_topo, depth_all_med_id, topo_all_med_out, start=[imosaic, jmosaic], &
         count=[ipoints, jpoints]))
       call handle_error(nf90_put_var(ncid_topo, frac_id, frac, start=[imosaic, jmosaic], count=[ipoints, jpoints]))
-      deallocate(topo_out, topo_in, itopo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
+      deallocate(topo_out, topo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
 
-      istart = iend + 1
     end do
-    jstart = jend + 1
   end do
 
   ! Now we need to do the tripolar part
@@ -294,17 +310,13 @@ program gen_topo
 
       call get_range(xtopo, minx, maxx, istart, iend)
       call get_range(ytopo, miny, maxy, jstart, jend)
-      icount = iend - istart + 1
-      jcount = jend - jstart + 1
-      allocate(topo_in(icount, jcount))
-      allocate(itopo_in(icount, jcount))
       allocate(topo_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_all_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_med_out(imosaic:im_end, jmosaic:jm_end))
       allocate(topo_all_med_out(imosaic:im_end, jmosaic:jm_end))
       allocate(frac(imosaic:im_end, jmosaic:jm_end))
-      call handle_error(nf90_get_var(ncid, hid, itopo_in, start=[istart, jstart], count=[icount, jcount]))
-      topo_in = itopo_in
+
+      call get_topo_data(ncid, hid, istart, jstart, iend, jend, ishift, xlen, nint(360.0/xt_delta), topo_in)
 
       call make_topo_gen(topo_in, xtopo(istart:iend), ytopo(jstart:jend), topo_out, x_c(imosaic:im_end+1, jmosaic:jm_end+1), &
         y_c(imosaic:im_end+1, jmosaic:jm_end+1), topo_all_out, frac, topo_med_out, topo_all_med_out)
@@ -315,7 +327,7 @@ program gen_topo
       call handle_error(nf90_put_var(ncid_topo, depth_all_med_id, topo_all_med_out, start=[imosaic, jmosaic], &
         count=[ipoints, jpoints]))
       call handle_error(nf90_put_var(ncid_topo, frac_id, frac, start=[imosaic, jmosaic], count=[ipoints, jpoints]))
-      deallocate(topo_out, topo_in, itopo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
+      deallocate(topo_out, topo_in, topo_all_out, frac, topo_med_out, topo_all_med_out)
     end do
   end do
 
@@ -325,11 +337,63 @@ program gen_topo
 
 contains
 
+  subroutine get_topo_data(ncid, hid, istart, jstart, iend, jend, ishift, xlen, xperiod, topo)
+    integer(int32), intent(in) :: ncid, hid
+    integer(int32), intent(in) :: istart, jstart, iend, jend, ishift, xlen, xperiod
+    real(real32), allocatable, intent(out) :: topo(:, :)
+
+    integer(int32) :: icount, jcount
+    integer(int32) :: listart, liend, licount, licount1, licount2
+    integer(int32) :: n
+    integer(int16), allocatable :: itopo(:,:)
+
+    icount = iend - istart + 1
+    jcount = jend - jstart + 1
+    allocate(topo(icount, jcount))
+
+    do n = -1, 1
+      listart = istart + ishift + n*xperiod
+      if (1 <= listart .and. listart < xlen) exit
+    end do
+    do n = -1, 1
+      liend = iend + ishift + n*xperiod
+      if (1 < liend .and. liend <= xlen) exit
+    end do
+
+    if (.not. (1 <= listart .and. listart < xlen .and. 1 < liend .and. liend <= xlen) .or. &
+      (listart < liend .and. liend - listart + 1 /= icount)) then
+      write(*,*) "FATAL: some of the required points for the interpolation are not available in the topography file."
+      stop
+    end if
+
+    if (listart < liend) then
+      ! Data is contiguous in file
+      allocate(itopo(icount, jcount))
+      call handle_error(nf90_get_var(ncid, hid, itopo, start=[listart, jstart], count=[icount, jcount]))
+      topo = itopo
+      deallocate(itopo)
+    else
+      ! Data is in two patches: one at the start and another at the end of the longitude range
+      licount1 = xlen - listart + 1
+      allocate(itopo(licount1, jcount))
+      call handle_error(nf90_get_var(ncid, hid, itopo, start=[listart, jstart], count=[licount1, jcount]))
+      topo(1:licount1, 1:jcount) = itopo(1:licount1, 1:jcount)
+      deallocate(itopo)
+
+      licount2 = liend
+      allocate(itopo(licount2, jcount))
+      call handle_error(nf90_get_var(ncid, hid, itopo, start=[1, jstart], count=[licount2, jcount]))
+      topo(licount1+1:icount, 1:jcount) = itopo(1:licount2, 1:jcount)
+      deallocate(itopo)
+    end if
+
+  end subroutine get_topo_data
+
   subroutine get_range(vals, lower, upper, index_lo, index_hi)
     ! Get all values inside lower to upper
     real(real64), intent(in)    :: vals(:)
     real(real64), intent(in)    :: lower, upper
-    integer(int32), intent(out) ::index_lo, index_hi
+    integer(int32), intent(out) :: index_lo, index_hi
 
     integer(int32) :: itmp, imx, imn, its, itsmax = 20
 
