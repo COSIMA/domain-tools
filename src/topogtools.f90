@@ -1,44 +1,37 @@
 program topogtools
   use, intrinsic :: iso_fortran_env
   use M_CLI2
-  use check_nonadvective_m
-  use deseas_m
-  use fix_nonadvective_m
   use gen_topo_m
-  use min_max_depth_m
-  use topog2mask_m
+  use topography
   implicit none
 
   character(len=:), allocatable :: name
   character(len=:), allocatable :: help_text(:)
+  character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
+  type(topography_t) :: topog
+  real(real32) :: sea_area_fraction
   integer :: ii
 
+  ! Read command line
   name = get_subcommand()
-
   select case (name)
   case ('gen_topo')
-    call set_args('--input:i "unset" --output:o "unset" --hgrid "unset" --tripolar F --longitude-offset 0.0')
-    call gen_topo(sget('input'), sget('output'), sget('hgrid'), lget('tripolar'), rget('longitude-offset'))
+    call set_args('--input:i "unset" --output:o "unset" --hgrid:h "ocean_hgrid.nc" --tripolar:t F --longitude-offset 0.0')
 
   case ('deseas')
     call set_args('--input:i "unset" --output:o "unset"')
-    call deseas(sget('input'), sget('output'))
 
   case ('min_max_depth')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level:l 0')
-    call min_max_depth(sget('input'), sget('output'), sget('vgrid'), iget('level'))
+    call set_args('--input:i "unset" --output:o "unset" --vgrid:v "ocean_vgrid.nc" --level:l 0')
 
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"')
-    call fix_nonadvective(sget('input'), sget('output'), sget('vgrid'))
+    call set_args('--input:i "unset" --output:o "unset" --vgrid:v "ocean_vgrid.nc"')
 
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"')
-    call check_nonadvective(sget('input'), sget('vgrid'))
+    call set_args('--input:i "unset" --vgrid:v "ocean_vgrid.nc"')
 
-  case ('topog2mask')
-    call set_args('--input:i "unset" --mask:m "unset" --fraction 0.0')
-    call topog2mask(sget('input'), sget('mask'), rget('fraction'))
+  case ('mask')
+    call set_args('--input:i "unset" --output:o "unset" --fraction:f 0.0')
 
   case ('')
     ! general help for "topogtools"
@@ -54,7 +47,7 @@ program topogtools
       "  min_max_depth - Set minimum and maximum depth", &
       "  check_nonadvective - Check for cells that are nonadvective", &
       "  fix_nonadvective - Fix cells that are non-advective", &
-      "  topog2mask - Generate mask", &
+      "  mask - Generate mask", &
       "" ]
 
     ! Print help in case the user specified the --help flag
@@ -69,6 +62,66 @@ program topogtools
   case default
     write(*,'(3a)') "topogtools: '", trim(name), "' is not a topogtools subcommand. See 'topogtools --help'."
     stop
+  end select
+
+  ! Sanity checks for common arguments
+  file_in = sget('input')
+  if (file_in == 'unset') then
+    write(*,*) 'ERROR: no input file specified'
+    stop
+  end if
+  call check_file_exist(file_in)
+
+  select case (name)
+  case ('gen_topo', 'deseas', 'min_max_depth', 'fix_nonadvective', 'mask')
+    file_out = sget('output')
+    if (file_out == 'unset') then
+      write(*,*) 'ERROR: no output file specified'
+      stop
+    end if
+  end select
+
+  select case (name)
+  case ('min_max_depth', 'fix_nonadvective', 'check_nonadvective')
+    vgrid = sget('vgrid')
+    call check_file_exist(vgrid)
+  end select
+
+  ! Run subcommand
+  select case (name)
+  case ('gen_topo')
+    hgrid = sget('hgrid')
+    call check_file_exist(hgrid)
+    call gen_topo(file_in, file_out, hgrid, lget('tripolar'), rget('longitude-offset'))
+
+  case ('deseas')
+    topog = topography_t(file_in)
+    call topog%deseas()
+    call topog%write(file_out)
+
+  case ('min_max_depth')
+    topog = topography_t(file_in)
+    call topog%min_max_depth(vgrid, iget('level'))
+    call topog%write(file_out)
+
+  case ('fix_nonadvective')
+    topog = topography_t(file_in)
+    call topog%nonadvective(vgrid, fix=.true.)
+    call topog%write(file_out)
+
+  case ('check_nonadvective')
+    topog = topography_t(file_in)
+    call topog%nonadvective(vgrid, fix=.false.)
+
+  case ('mask')
+    sea_area_fraction = rget('fraction')
+    if (sea_area_fraction < 0.0 .and. sea_area_fraction > 1.0) then
+      write(*,*) "ERROR: sea area fraction must be between 0 and 1"
+      stop
+    end if
+    topog = topography_t(file_in)
+    call topog%mask(file_out, sea_area_fraction)
+
   end select
 
 end program topogtools

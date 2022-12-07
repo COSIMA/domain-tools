@@ -23,6 +23,9 @@ module topography
     procedure :: write => topography_write
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
+    procedure :: deseas => topography_deseas
+    procedure :: nonadvective => topography_nonadvective
+    procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
   end type topography_t
 
@@ -142,6 +145,353 @@ contains
     call handle_error(nf90_enddef(ncid))
 
   end subroutine topography_write
+
+  !-------------------------------------------------------------------------
+  subroutine topography_deseas(this)
+    class(topography_t), intent(inout) :: this
+
+    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock, counter2
+    integer(int32) :: im, ip, jm, jp, land
+
+    integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
+
+    integer(int16), allocatable :: sea(:,:)
+
+    logical :: choke_west, choke_east, choke_north, choke_south
+
+    allocate(sea(this%nxt, this%nyt))
+
+    ! Do
+    write(*,*) "Removing seas"
+    land = this%nxt + this%nyt + 1
+    sea = land
+    do j = 1, this%nyt
+      do i = 1, this%nxt
+        if (this%depth(i, j) > 0.0) sea(i, j) = i + j
+      end do
+      if (all(this%depth(:, j) > 0.0)) sea(:, j) = 0  ! Southern Ocean all water across
+    end do
+
+    do its = 1, 150   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
+      counter = 0
+      sea_num = 1
+
+      ! Get number of seas
+      do j = 2, this%nyt - 1
+        i = 1
+        jm = j - 1
+        jp = j + 1
+        if (sea(i, j) < land  .and. sea(i, j) > 0) then
+          if (sea(i, j) >= sea_num) then
+            sea(i, j) = sea_num
+            sea_num = max(min(sea_num+1, sea(this%nxt, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+          end if
+        end if
+
+        do i = 2, this%nxt - 1
+          im = i - 1
+          ip = i + 1
+          if (sea(i, j) < land  .and. sea(i, j) > 0) then
+            if (sea(i, j) >= sea_num) then
+              sea(i, j) = sea_num
+              sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+            end if
+          end if
+        end do
+
+        i = this%nxt
+        if (sea(i, j) < land  .and. sea(i, j) > 0) then
+          if (sea(i, j) >= sea_num) then
+            sea(i, j) = sea_num
+            sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(1, j), sea(i, j+1)), sea_num)
+          end if
+        end if
+      end do
+
+      j = this%nyt
+      do i = 2, this%nxt - 1
+        if (sea(i, j) < land  .and. sea(i, j) > 0) then
+          if (sea(i,j) >= sea_num) then
+            sea(i,j) = sea_num
+            sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j)), sea_num)
+          end if
+        end if
+      end do
+
+      ! Diffuse lowest values surrounding a point.
+
+      ! Forward sweep.
+      do j = 2, this%nyt
+        jm = j - 1
+        jp = min(j+1, this%nyt)
+        i = 1
+        im = this%nxt
+        ip = 2
+        if (sea(i, j) < land .and. sea(i, j) > 0) then
+          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          counter = counter + 1
+        end if
+        do i = 2, this%nxt - 1
+          im = i - 1
+          ip = i + 1
+          if (sea(i, j) < land .and. sea(i, j) > 0) then
+            if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
+              sea(i, j) = land
+            else
+              !get chokes
+              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            end if
+            counter = counter + 1
+          end if
+        end do
+        i = this%nxt
+        im = 1
+        ip = i - 1
+        if (sea(i, j) < land .and. sea(i, j) > 0) then
+          sea(i,j)=min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          counter = counter + 1
+        end if
+      end do
+
+      ! Backward sweep
+      do j = this%nyt, 2, -1
+        jm = j - 1
+        jp = min(j+1, this%nyt)
+        i = 1
+        im = this%nxt
+        ip = 2
+        if (sea(i, j) < land .and. sea(i, j) > 0) then
+          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          counter = counter + 1
+        end if
+        do i = this%nxt - 1, 2, -1
+          im = i - 1
+          ip = i + 1
+          if (sea(i, j) < land .and. sea(i, j) > 0) then
+            if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
+              sea(i, j) = land
+            else
+              !get chokes
+              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            end if
+            counter = counter + 1
+          end if
+        end do
+        i = this%nxt
+        im = 1
+        ip = i - 1
+        if (sea(i, j) < land .and. sea(i, j) > 0) then
+          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          counter = counter + 1
+        end if
+      end do
+      write(*,*) counter, sea_num
+
+      ! If we only have one sea or no changes are made we are finished.
+      if (counter == 0 .or. sea_num == 1) exit
+    end do
+
+    write(*,*) "Done"
+
+    ! Write out new topography
+    do j = 1, this%nyt
+      do i = 1, this%nxt
+        if (sea(i, j) > 0) then
+          this%depth(i, j) = MISSING_VALUE
+          this%frac(i, j) = MISSING_VALUE
+        end if
+      end do
+    end do
+    this%lakes_removed = "yes"
+
+    call handle_error(nf90_create(trim('sea_num.nc'), ior(nf90_netcdf4, nf90_clobber), ncid))
+    call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
+    call handle_error(nf90_def_dim(ncid, 'ny', this%nyt, dids(2)))
+    call handle_error(nf90_def_var(ncid, 'sea_num', nf90_short, dids, sea_id, chunksizes=[this%nxt/10, this%nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_enddef(ncid))
+    call handle_error(nf90_put_var(ncid, sea_id, sea))
+    call handle_error(nf90_close(ncid))
+
+  end subroutine topography_deseas
+
+  !-------------------------------------------------------------------------
+  subroutine topography_min_max_depth(this, vgrid, level)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: vgrid
+    integer, intent(in) :: level
+
+    integer(int32) :: i,j
+    integer(int32) :: im,ip,jm,jp
+
+    integer(int32) :: ncid_lev, lev_id           ! NetCDF ids
+    integer(int32) :: dids_lev(1)           ! NetCDF ids
+    integer(int32) :: zlen                   ! length of zeta array
+
+    real(real64)  ::  zeta
+    real(real64), allocatable :: zeta_arr(:)
+
+    this%min_level = level
+
+    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid_lev))
+    call handle_error(nf90_inq_varid(ncid_lev, 'zeta', lev_id))
+    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[2*this%min_level+1]))
+    this%min_depth = zeta
+
+    call handle_error(nf90_inquire_variable(ncid_lev, lev_id, dimids=dids_lev))
+    call handle_error(nf90_inquire_dimension(ncid_lev, dids_lev(1), len=zlen))
+    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[zlen]))
+    this%max_depth = zeta
+
+    call handle_error(nf90_close(ncid_lev))
+
+    write(*,*) 'Setting minimum depth to ', this%min_depth
+    write(*,*) 'Setting maximum depth to ', this%max_depth
+
+    ! Reset depth
+    do j = 1, this%nyt
+      do i = 1, this%nxt
+        if (this%depth(i, j) > 0.0) then
+          this%depth(i, j) = min(max(this%depth(i, j), this%min_depth), this%max_depth)
+        else
+          this%depth(i, j) = MISSING_VALUE
+        end if
+      end do
+    end do
+
+  end subroutine topography_min_max_depth
+
+  !-------------------------------------------------------------------------
+  subroutine topography_nonadvective(this, vgrid, fix)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: vgrid
+    logical, intent(in) :: fix
+
+    real(real32), allocatable :: depth_halo(:,:)
+    integer(int32), allocatable :: num_levels(:,:)
+    real(real32), allocatable :: zw(:), zeta(:)
+    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, counter
+    integer(int32) :: ncid, vid
+    integer(int32) :: dids(2)
+    logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
+    logical :: changes_made = .false.
+    integer(int32) :: kse, ksw, kne, knw, kmu_max
+    integer(int32) :: im, ip, jm, jp
+
+    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
+    call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
+    call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
+    call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
+    nz = nzeta/2
+    write(*,*) 'Zeta dimensions', nzeta, nz
+    allocate(zeta(nzeta), zw(0:nz))
+    call handle_error(nf90_get_var(ncid, vid, zeta))
+    call handle_error(nf90_close(ncid))
+    zw(:) = zeta(1:nzeta:2)
+
+    write(*,*) 'depth dimensions', this%nxt, this%nyt
+    allocate(depth_halo(0:this%nxt+1, this%nyt+1))
+    allocate(num_levels(0:this%nxt+1, this%nyt+1))
+
+    if (fix) then
+      passes = 20
+    else
+      passes = 1
+    end if
+    do its = 1, passes
+      counter = 0
+      num_levels = 0
+
+      depth_halo = 0
+      depth_halo(1:this%nxt, 1:this%nyt) = this%depth
+      depth_halo(0, 1:this%nyt) = this%depth(this%nxt, :)
+      depth_halo(this%nxt+1, 1:this%nyt)=this%depth(1, :)
+      depth_halo(1:this%nxt, this%nyt+1) = this%depth(this%nxt:1:-1, this%nyt)
+      do j = 1, this%nyt + 1
+        do i = 0, this%nxt + 1
+          if (depth_halo(i, j) > 0.0) then
+            kloop: do k = 2, nz
+              if (zw(k) >= depth_halo(i, j)) then
+                num_levels(i, j) = k
+                exit kloop
+              end if
+            end do kloop
+          end if
+        end do
+      end do
+
+      do j = 2, this%nyt - 1
+        do i = 1, this%nxt
+          if (depth_halo(i, j) > 0.5) then
+            sw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j-1) < 0.5 .or. depth_halo(i, j-1) < 0.5
+            se = depth_halo(i, j-1) < 0.5 .or. depth_halo(i+1, j-1) < 0.5 .or. depth_halo(i+1, j) < 0.5
+            ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
+            nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
+            if (all([se, sw, ne, nw])) then
+              if (fix) then
+                depth_halo(i, j) = 0.0
+                this%frac(i, j) = 0.0
+                num_levels(i, j) = 0
+              end if
+              counter = counter + 1
+              write(*,*) i, j, 0.0 ,'  ! nonadvective'
+            end if
+          end if
+        end do
+      end do
+
+      write(*,*) '1', counter
+
+      do j = 2, this%nyt
+        jm = j - 1
+        jp = j + 1
+        do i = 1, this%nxt
+          im = i - 1
+          ip = i + 1
+          if (num_levels(i, j) > 0) then
+            ksw = minval([num_levels(im, jm), num_levels(i, jm), num_levels(im, j)])
+            kse = minval([num_levels(i, jm), num_levels(ip, jm), num_levels(ip, j)])
+            knw = minval([num_levels(im, j), num_levels(im,jp), num_levels(i, jp)])
+            kne = minval([num_levels(ip, j), num_levels(i,jp), num_levels(ip, jp)])
+
+            kmu_max = maxval([ksw, kse, knw, kne])
+
+            if (num_levels(i, j) > kmu_max) then
+              if (fix) then
+                num_levels(i, j) = kmu_max
+                depth_halo(i, j) = zw(kmu_max)
+              else
+                write(*,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+              end if
+              counter = counter + 1
+            end if
+          end if
+        end do
+      end do
+      if (counter > 0 .and. fix) changes_made = .true.
+      write(*,*) counter
+      this%depth = depth_halo(1:this%nxt, 1:this%nyt)
+      if (counter == 0 .and. fix) exit
+    end do
+
+    if (fix) then
+      this%nonadvective_cells_removed = 'yes'
+      if (changes_made) then
+        this%lakes_removed = 'no'
+      end if
+    end if
+
+  end subroutine topography_nonadvective
 
   !-------------------------------------------------------------------------
   subroutine topography_mask(this, filename, sea_area_fraction)

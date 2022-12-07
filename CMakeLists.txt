@@ -17,12 +17,7 @@ add_library(M_CLI2
 add_library(topography
   src/utils.f90
   src/topography.f90
-  src/deseas.f90
-  src/check_nonadvective.f90
-  src/fix_nonadvective.f90
   src/gen_topo.f90
-  src/min_max_depth.f90
-  src/topog2mask.f90
   src/kdtree2.f90
 )
 target_link_libraries(topography PRIVATE NetCDF::NetCDF_Fortran
