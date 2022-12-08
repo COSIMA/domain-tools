@@ -60,15 +60,15 @@ program topogtools
     end if
 
   case default
-    write(output_unit,'(3a)') "topogtools: '", trim(name), "' is not a topogtools subcommand. See 'topogtools --help'."
-    stop
+    write(error_unit,'(3a)') "topogtools: '", trim(name), "' is not a topogtools subcommand. See 'topogtools --help'."
+    error stop
   end select
 
   ! Sanity checks for common arguments
   file_in = sget('input')
   if (file_in == 'unset') then
     write(error_unit,'(a)') 'ERROR: no input file specified'
-    stop
+    error stop
   end if
   call check_file_exist(file_in)
 
@@ -77,7 +77,7 @@ program topogtools
     file_out = sget('output')
     if (file_out == 'unset') then
       write(error_unit,'(a)') 'ERROR: no output file specified'
-      stop
+      error stop
     end if
   end select
 
@@ -117,7 +117,7 @@ program topogtools
     sea_area_fraction = rget('fraction')
     if (sea_area_fraction < 0.0 .and. sea_area_fraction > 1.0) then
       write(error_unit,'(a)') "ERROR: sea area fraction must be between 0 and 1"
-      stop
+      error stop
     end if
     topog = topography_t(file_in)
     call topog%mask(file_out, sea_area_fraction)

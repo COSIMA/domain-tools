@@ -127,8 +127,8 @@ contains
       end do
 
       if ( j_lat == 0 ) then
-        write(error_unit,'(a)') 'FATAL: unable to locate j_lat for tripolar grid'
-        stop 1
+        write(error_unit,'(a)') 'ERROR: unable to locate j_lat for tripolar grid'
+        error stop
       end if
     end if
 
@@ -174,12 +174,12 @@ contains
     ! Make sure no longitude is > 360 nor < -360 (extremely unlikely to happen,
     ! but lets be defensive)
     if (any(xtopo > 360.0) .or. any(xtopo < -360.0)) then
-      write(error_unit,'(a)') "FATAL: topography grid longitude range extends beyond the -360deg to 360deg range"
-      stop
+      write(error_unit,'(a)') "ERROR: topography grid longitude range extends beyond the -360deg to 360deg range"
+      error stop
     end if
     if (any(x_c > 360.0) .or. any(x_c < -360.0)) then
-      write(error_unit,'(a)') "FATAL: ocean grid longitude range extends beyond the -360deg to 360deg range"
-      stop
+      write(error_unit,'(a)') "ERROR: ocean grid longitude range extends beyond the -360deg to 360deg range"
+      error stop
     end if
 
     ! work in patches
@@ -344,8 +344,8 @@ contains
 
       if (.not. (1 <= listart .and. listart < xlen .and. 1 < liend .and. liend <= xlen) .or. &
         (listart < liend .and. liend - listart + 1 /= icount)) then
-        write(error_unit,'(a)') "FATAL: some of the required points for the interpolation are not available in the topography file."
-        stop
+        write(error_unit,'(a)') "ERROR: some of the required points for the interpolation are not available in the topography file."
+        error stop
       end if
 
       if (listart < liend) then
@@ -400,7 +400,7 @@ contains
           end if
           if (its>itsmax) then
             write(error_unit,*) imn, imx, lower, vals(imn), vals(imx)
-            stop 1
+            error stop
           end if
         end do
       end if
@@ -426,7 +426,7 @@ contains
           end if
           if (its > itsmax) then
             write(error_unit,*) imn, imx, upper, vals(imn), vals(imx)
-            stop 2
+            error stop
           end if
         end do
       end if
