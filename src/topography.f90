@@ -41,7 +41,7 @@ contains
 
     integer(int32) :: ncid, depth_id, frac_id, dids(2) ! NetCDF ids
 
-    write(*,*) "Reading topography from file '", trim(filename), "'"
+    write(output_unit,'(3a)') "Reading topography from file '", trim(filename), "'"
 
     topog%original_file = filename
 
@@ -106,7 +106,7 @@ contains
 
     integer(int32) :: ncid, depth_id, frac_id, dids(2) ! NetCDF ids
 
-    write(*,*) "Writing topography to file '", trim(filename), "'"
+    write(output_unit,'(3a)') "Writing topography to file '", trim(filename), "'"
 
     ! Open file
     call handle_error(nf90_create(trim(filename), ior(nf90_netcdf4, nf90_clobber), ncid))
@@ -162,7 +162,7 @@ contains
     allocate(sea(this%nxt, this%nyt))
 
     ! Do
-    write(*,*) "Removing seas"
+    write(output_unit,'(a)') "Removing seas"
     land = this%nxt + this%nyt + 1
     sea = land
     do j = 1, this%nyt
@@ -295,13 +295,13 @@ contains
           counter = counter + 1
         end if
       end do
-      write(*,*) counter, sea_num
+      write(output_unit,*) counter, sea_num
 
       ! If we only have one sea or no changes are made we are finished.
       if (counter == 0 .or. sea_num == 1) exit
     end do
 
-    write(*,*) "Done"
+    write(output_unit,'(a)') "Done"
 
     ! Write out new topography
     do j = 1, this%nyt
@@ -355,8 +355,8 @@ contains
 
     call handle_error(nf90_close(ncid_lev))
 
-    write(*,*) 'Setting minimum depth to ', this%min_depth
-    write(*,*) 'Setting maximum depth to ', this%max_depth
+    write(output_unit,'(2a)') 'Setting minimum depth to ', this%min_depth
+    write(output_unit,'(2a)') 'Setting maximum depth to ', this%max_depth
 
     ! Reset depth
     do j = 1, this%nyt
@@ -393,13 +393,13 @@ contains
     call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
     call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
     nz = nzeta/2
-    write(*,*) 'Zeta dimensions', nzeta, nz
+    write(output_unit,*) 'Zeta dimensions', nzeta, nz
     allocate(zeta(nzeta), zw(0:nz))
     call handle_error(nf90_get_var(ncid, vid, zeta))
     call handle_error(nf90_close(ncid))
     zw(:) = zeta(1:nzeta:2)
 
-    write(*,*) 'depth dimensions', this%nxt, this%nyt
+    write(output_unit,*) 'depth dimensions', this%nxt, this%nyt
     allocate(depth_halo(0:this%nxt+1, this%nyt+1))
     allocate(num_levels(0:this%nxt+1, this%nyt+1))
 
@@ -444,13 +444,13 @@ contains
                 num_levels(i, j) = 0
               end if
               counter = counter + 1
-              write(*,*) i, j, 0.0 ,'  ! nonadvective'
+              write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
             end if
           end if
         end do
       end do
 
-      write(*,*) '1', counter
+      write(output_unit,*) '1', counter
 
       do j = 2, this%nyt
         jm = j - 1
@@ -471,7 +471,7 @@ contains
                 num_levels(i, j) = kmu_max
                 depth_halo(i, j) = zw(kmu_max)
               else
-                write(*,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+                write(output_unit,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
               end if
               counter = counter + 1
             end if
@@ -479,7 +479,7 @@ contains
         end do
       end do
       if (counter > 0 .and. fix) changes_made = .true.
-      write(*,*) counter
+      write(output_unit,*) counter
       this%depth = depth_halo(1:this%nxt, 1:this%nyt)
       if (counter == 0 .and. fix) exit
     end do
@@ -502,7 +502,7 @@ contains
     integer(int32) :: ncid, mask_id, dids(2) ! NetCDF ids
     real(real32), allocatable :: mask(:, :)
 
-    write(*,*) "Calculating mask"
+    write(output_unit,'(a)') "Calculating mask"
 
     allocate(mask(this%nxt, this%nyt))
 
@@ -512,7 +512,7 @@ contains
       mask = 1.0
     end where
 
-    write(*,*) "Writing mask to file '", trim(filename), "'"
+    write(output_unit,'(3a)') "Writing mask to file '", trim(filename), "'"
 
     ! Open file
     call handle_error(nf90_create(trim(filename), ior(nf90_netcdf4, nf90_clobber), ncid))

@@ -4,41 +4,91 @@ Code and tools to edit and manipulate ocean model grids and topographies.
 
 Below is a list of included tools and short documentation for each.
 
-## Russ' Fortran tools
+
+## topogtools (Russ' Fortran tools)
+
+```
+usage: topogtools [--help] <command> [<args>]
+```
+
+Collection of tools to edit and manipulate ocean model topographies.
+See `topogtools --help <command>` to read about a specific subcommand.
+
+Available commands:
+  * `gen_topo` - Generate a new topography file from a bathymetry
+  * `deseas` - Remove enclosed seas
+  * `min_max_depth` - Set minimum and maximum depth
+  * `check_nonadvective` - Check for non-advective cells
+  * `fix_nonadvective` - Fix non-advective cells
+  * `mask` - Generate mask
 
 ### gen_topo
-Generate a new topography file `topog_new.nc` from GEBCO bathymetry.
-Takes no arguments but requires `mosaic.nc`, `ocean_mosaic.nc`, `ocean_hgrid.nc` and `gebco_2014_rot.nc` to be present.
+
+```
+usage: topogtools gen_topo --input <input_file> --output <output_file>
+                           --hgrid <grid> [<options>]
+```
+
+Generate a new topography from `<input_file>` on the tracer points of `<grid>` and
+writes the result to `<output_file>`. Note that `<grid>` must be a super-grid
+
+Options
+  * `--tripolar`                  horizontal grid is a tripolar grid
+  * `--longitude-offset <value>`  offset (in degrees) between the central longitude of the ocean horizontal grid and of the bathymetry grid (default '0.0')
 
 ### deseas
-Remove enclosed seas from `topog.nc` file.
-Usage:
-```bash
-./deseas topog_in.nc topog_out.nc
+
 ```
+usage: topogtools deseas --input <input_file> --output <output_file>
+```
+
+Remove enclosed seas from <input_file> and writes the result to <output_file>.
 
 ### min_max_depth
-Set minimum depth to the depth at a specified level (same as `min_depth` above), and also set maximum depth to the deepest in `ocean_vgrid.nc`.
-Usage:
-```bash
-./min_max_depth topog_in.nc topog_out.nc level
+
 ```
-where *level* is the minimum number of depth levels (e.g. 4).
-Requires `ocean_vgrid.nc` to be present.
+usage: topogtools min_max_depth --input <input_file> --output <output_file>
+                                --level <level> [--vgrid <vgrid>]
+```
+
+Set minimum depth to the depth at a specified level and set maximum depth to
+deepest in `<vgrid>`. `<level>` is the minimum number of depth levels (e.g. 4).
 Can produce non-advective cells.
 
-### check_nonadvective_mosaic
-Check for cells that are nonadvective on a B grid. Doesn't detect choked channels in all cases - use `non-advective.ipynb` (below) to find non-advective edges.
-Usage:
-```bash
-./check_nonadvective_mosaic topog.nc
-```
-Requires `ocean_vgrid.nc` to be present.
+Options
+  * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
 
-### fix_nonadvective_mosaic
-Fix cells that are non-advective on a B grid.
-Usage:
-```bash
-./fix_nonadvective_mosaic topog_in.nc topog_out.nc
+### check_nonadvective
+
 ```
-Requires `ocean_vgrid.nc` to be present.
+usage: topogtools check_nonadvective --input <input_file> [--vgrid <vgrid>]
+```
+
+Check for cells that are nonadvective on a B grid.
+
+Options
+  * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
+
+### fix_nonadvective
+
+```
+usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
+                                   [--vgrid <vgrid>]
+```
+
+Fix cells that are non-advective on a B grid.
+
+Options
+  * --vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
+
+### mask
+
+```
+usage: topogtools mask  --input <input_file> --output <output_file>
+                        [--fraction <frac>]
+```
+
+Creates a land mask from a topography.
+
+Options
+  * `--fraction <frac>`  cells with a fraction of sea area smaller than `<frac>` will be set as land (default '0.0')

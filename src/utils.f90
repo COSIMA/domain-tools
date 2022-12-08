@@ -15,8 +15,8 @@ contains
 
     inquire(file = trim(filename), exist = fexist)
     if (.not. fexist) then
-      write(*,*) "ERROR: file ", trim(filename), " does not exist."
-      stop
+      write(error_unit,'(3a)') "ERROR: file ", trim(filename), " does not exist."
+      error stop
     end if
 
   end subroutine check_file_exist
@@ -33,9 +33,9 @@ contains
     if (present(isfatal)) fatal = isfatal
     if (error_flag  /= nf90_noerr) then
       if (fatal) then
-        write(*,*) 'FATAL ERROR:', nf90_strerror(error_flag)
-        if (present(err_string)) write(*,*) trim(err_string)
-        stop
+        write(error_unit,'(2a)') 'FATAL ERROR:', nf90_strerror(error_flag)
+        if (present(err_string)) write(error_unit,'(a)') trim(err_string)
+        error stop
       end if
     end if
 

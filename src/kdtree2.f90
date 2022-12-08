@@ -26,6 +26,7 @@ module kdtree2_precision_module
 end module kdtree2_precision_module
 
 module kdtree2_priority_queue_module
+  use iso_fortran_env
   use kdtree2_precision_module
   !
   ! maintain a priority queue (PQ) of data, pairs of 'priority/payload', 
@@ -244,8 +245,8 @@ bigloop:  do
     if (a%heap_size .gt. 0) then
        e = a%elems(1) 
     else
-       write (*,*) 'PQ_MAX: ERROR, heap_size < 1'
-       stop
+       write (error_unit,*) 'PQ_MAX: ERROR, heap_size < 1'
+       error stop
     endif
     return
   end subroutine pq_max
@@ -256,8 +257,8 @@ bigloop:  do
     if (a%heap_size .gt. 0) then
        pq_maxpri = a%elems(1)%dis
     else
-       write (*,*) 'PQ_MAX_PRI: ERROR, heapsize < 1'
-       stop
+       write (error_unit,*) 'PQ_MAX_PRI: ERROR, heapsize < 1'
+       error stop
     endif
     return
   end function pq_maxpri
@@ -285,8 +286,8 @@ bigloop:  do
        call heapify(a,1)
        return
     else
-       write (*,*) 'PQ_EXTRACT_MAX: error, attempted to pop non-positive PQ'
-       stop
+       write (error_unit,*) 'PQ_EXTRACT_MAX: error, attempted to pop non-positive PQ'
+       error stop
     end if
     
   end subroutine pq_extract_max
@@ -307,8 +308,8 @@ bigloop:  do
     !
 
     !    if (a%heap_size .ge. a%max_elems) then
-    !       write (*,*) 'PQ_INSERT: error, attempt made to insert element on full PQ'
-    !       stop
+    !       write (error_unit,*) 'PQ_INSERT: error, attempt made to insert element on full PQ'
+    !       error stop
     !    else
     a%heap_size = a%heap_size + 1
     i = a%heap_size
@@ -456,8 +457,8 @@ bigloop:  do
     integer           :: i
 
     if ((i .lt. 1) .or. (i .gt. a%heap_size)) then
-       write (*,*) 'PQ_DELETE: error, attempt to remove out of bounds element.'
-       stop
+       write (error_unit,*) 'PQ_DELETE: error, attempt to remove out of bounds element.'
+       error stop
     endif
 
     ! swap the item to be deleted with the last element
@@ -473,6 +474,7 @@ end module kdtree2_priority_queue_module
 
 
 module kdtree2_module
+  use iso_fortran_env
   use kdtree2_precision_module
   use kdtree2_priority_queue_module
   ! K-D tree routines in Fortran 90 by Matt Kennel.
@@ -651,13 +653,13 @@ contains
 
     if (mr%dimen > mr%n) then
        !  unlikely to be correct
-       write (*,*) 'KD_TREE_TRANS: likely user error.'
-       write (*,*) 'KD_TREE_TRANS: You passed in matrix with D=',mr%dimen
-       write (*,*) 'KD_TREE_TRANS: and N=',mr%n
-       write (*,*) 'KD_TREE_TRANS: note, that new format is data(1:D,1:N)'
-       write (*,*) 'KD_TREE_TRANS: with usually N >> D.   If N =approx= D, then a k-d tree'
-       write (*,*) 'KD_TREE_TRANS: is not an appropriate data structure.'
-       stop
+       write (error_unit,*) 'KD_TREE_TRANS: likely user error.'
+       write (error_unit,*) 'KD_TREE_TRANS: You passed in matrix with D=',mr%dimen
+       write (error_unit,*) 'KD_TREE_TRANS: and N=',mr%n
+       write (error_unit,*) 'KD_TREE_TRANS: note, that new format is data(1:D,1:N)'
+       write (error_unit,*) 'KD_TREE_TRANS: with usually N >> D.   If N =approx= D, then a k-d tree'
+       write (error_unit,*) 'KD_TREE_TRANS: is not an appropriate data structure.'
+       error stop
     end if
 
     call build_tree(mr)
@@ -1339,9 +1341,8 @@ contains
     integer, intent(in) :: n
 
     if (size(sr%results,1) .lt. n) then
-       write (*,*) 'KD_TREE_TRANS:  you did not provide enough storage for results(1:n)'
-       stop
-       return
+       write (error_unit,*) 'KD_TREE_TRANS:  you did not provide enough storage for results(1:n)'
+       error stop
     endif
 
     return
