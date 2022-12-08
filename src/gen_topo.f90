@@ -70,7 +70,7 @@ contains
     !
     ! On mosaic "supergrid" we need to get every second point
     !
-    write(*,*) 'Reading supergrid info'
+    write(output_unit,'(a)') 'Reading supergrid info'
     ! Read xt
     call handle_error(nf90_open(trim(grid_file), nf90_nowrite, ncid))
     call handle_error(nf90_inq_dimid(ncid, 'nx', did))
@@ -127,12 +127,12 @@ contains
       end do
 
       if ( j_lat == 0 ) then
-        write(*,*) 'FATAL: unable to locate j_lat for tripolar grid'
+        write(error_unit,'(a)') 'FATAL: unable to locate j_lat for tripolar grid'
         stop 1
       end if
     end if
 
-    write(*,*) ' j_lat located at ', j_lat, 'latitude ', y_c(1, j_lat)
+    write(output_unit,*) ' j_lat located at ', j_lat, 'latitude ', y_c(1, j_lat)
 
     ! Area, probably should do dxt*dyt correctly but I think this is ok.
     deallocate(wrk_super)
@@ -141,7 +141,7 @@ contains
     !call handle_error(nf90_inq_varid(ncid, 'area', vid))
     !call handle_error(nf90_get_var(ncid, vid, wrk_super))
     !call handle_error(nf90_close(ncid))
-    !write(*,*) nx, ny, shape(wrk_super), shape(area)
+    !write(output_unit,*) nx, ny, shape(wrk_super), shape(area)
     !do j = 1, nyt
     !  do i = 1, nxt
     !    area(i, j) = wrk_super(2*i-1, 2*j-1)+ wrk_super(2*i, 2*j-1) + wrk_super(2*i-1, 2*j)+ wrk_super(2*i, 2*j)
@@ -174,11 +174,11 @@ contains
     ! Make sure no longitude is > 360 nor < -360 (extremely unlikely to happen,
     ! but lets be defensive)
     if (any(xtopo > 360.0) .or. any(xtopo < -360.0)) then
-      write(*,*) "FATAL: topography grid longitude range extends beyond the -360deg to 360deg range"
+      write(error_unit,'(a)') "FATAL: topography grid longitude range extends beyond the -360deg to 360deg range"
       stop
     end if
     if (any(x_c > 360.0) .or. any(x_c < -360.0)) then
-      write(*,*) "FATAL: ocean grid longitude range extends beyond the -360deg to 360deg range"
+      write(error_unit,'(a)') "FATAL: ocean grid longitude range extends beyond the -360deg to 360deg range"
       stop
     end if
 
@@ -191,19 +191,19 @@ contains
       if (ytopo(jstart) >= y_c(1, 1)) exit
     end do
 
-    write(*,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
+    write(output_unit,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
 
     yt_delta = (ytopo(ylen) - ytopo(1))/(ylen - 1)
     xt_delta = (xtopo(xlen) - xtopo(1))/(xlen - 1)
 
     jstart = nint((y_c(1, 1) - ytopo(1))/yt_delta) + 1
-    write(*,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
+    write(output_unit,*) 'Mosaic grid starts at ', y_c(1, 1), ' topography jstart = ', jstart,' lat = ', ytopo(jstart)
 
     ! Shift topography grid if requested
     ishift = nint(offset/xt_delta)
     if (ishift /= 0) then
       xtopo = xtopo + offset
-      write(*,*) "Shifted topography longitude grid by ", offset, "(ishift = ", ishift, ")"
+      write(output_unit,*) "Shifted topography longitude grid by ", offset, "(ishift = ", ishift, ")"
     end if
 
     !
@@ -231,7 +231,7 @@ contains
 
       jpoints = jm_end - jmosaic + 1
       
-      write(*,*) 'jmosaic =', jmosaic, ystart, yend, jstart, jend
+      write(output_unit,*) 'jmosaic =', jmosaic, ystart, yend, jstart, jend
 
       do imosaic = 1, nxt, iblock
         im_end = min(imosaic + iblock - 1, nxt)
@@ -242,7 +242,7 @@ contains
         iend = min(nint((xend - xtopo(1))/xt_delta) + 1, xlen)
         if (xstart > xtopo(istart)) istart = istart + 1
         if (xend < xtopo(iend)) iend = iend - 1
-        write(*,*) 'imosaic =', imosaic, xstart, xend, istart, iend
+        write(output_unit,*) 'imosaic =', imosaic, xstart, xend, istart, iend
 
         !do i = istart + 1, xlen-1
         !  iend = i
@@ -251,7 +251,7 @@ contains
 
         call get_topo_data(ncid, hid, istart, jstart, iend, jend, ishift, xlen, nint(360.0/xt_delta), topo_in)
         ipoints = im_end - imosaic + 1
-        write(*,*) ipoints
+        write(output_unit,*) ipoints
 
         allocate(topo_out(imosaic:im_end, jmosaic:jm_end))
         allocate(topo_all_out(imosaic:im_end, jmosaic:jm_end))
@@ -344,7 +344,7 @@ contains
 
       if (.not. (1 <= listart .and. listart < xlen .and. 1 < liend .and. liend <= xlen) .or. &
         (listart < liend .and. liend - listart + 1 /= icount)) then
-        write(*,*) "FATAL: some of the required points for the interpolation are not available in the topography file."
+        write(error_unit,'(a)') "FATAL: some of the required points for the interpolation are not available in the topography file."
         stop
       end if
 
@@ -399,7 +399,7 @@ contains
             exit
           end if
           if (its>itsmax) then
-            write(*,*) imn, imx, lower, vals(imn), vals(imx)
+            write(error_unit,*) imn, imx, lower, vals(imn), vals(imx)
             stop 1
           end if
         end do
@@ -425,7 +425,7 @@ contains
             exit
           end if
           if (its > itsmax) then
-            write(*,*) imn, imx, upper, vals(imn), vals(imx)
+            write(error_unit,*) imn, imx, upper, vals(imn), vals(imx)
             stop 2
           end if
         end do
@@ -484,7 +484,7 @@ contains
       topo_all_med_out = 0.0
       frac = 0.0
 
-      write(*,*) 'im, jm, it, jt', im, jm, it, jt
+      write(output_unit,*) 'im, jm, it, jt', im, jm, it, jt
       allocate(mask(it, jt))
 
 
@@ -533,7 +533,7 @@ contains
       !    end do
       !  end do
       !end do
-      !!write(*,*) 'Culled points N', count(.not.mask)
+      !!write(output_unit,*) 'Culled points N', count(.not.mask)
  
       ngd = count(mask)
 
@@ -591,10 +591,10 @@ contains
             call kdtree2_r_nearest(tp = tree, qv = t_source, r2= rad2, nfound = num_found, nalloc = num_max, results = results)
 
             if (num_found == 0) then
-              !write(*,*) 'Nothing found, i, j, x_t(i, j), y_t(i, j)', i, j, x_t(i, j), y_t(i, j)
-              !write(*,*) x_c(i:i+1, j:j+1)
-              !write(*,*) y_c(i:i+1, j:j+1)
-              !write(*,*) rad2, minval(x_in), maxval(x_in), minval(y_in), maxval(y_in)
+              !write(output_unit,*) 'Nothing found, i, j, x_t(i, j), y_t(i, j)', i, j, x_t(i, j), y_t(i, j)
+              !write(output_unit,*) x_c(i:i+1, j:j+1)
+              !write(output_unit,*) y_c(i:i+1, j:j+1)
+              !write(output_unit,*) rad2, minval(x_in), maxval(x_in), minval(y_in), maxval(y_in)
               !stop
               cycle
             end if
