@@ -19,10 +19,12 @@ module topography
     real(real32), allocatable :: frac(:,:)
     ! Global attributes
     character(len=:), allocatable :: original_file
+    character(len=:), allocatable :: history
   contains
     procedure :: write => topography_write
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
+    procedure :: update_history => topography_update_history
     procedure :: deseas => topography_deseas
     procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
@@ -39,7 +41,7 @@ contains
   type(topography_t) function topography_constructor(filename) result(topog)
     character(len=*), intent(in) :: filename
 
-    integer(int32) :: ncid, depth_id, frac_id, dids(2) ! NetCDF ids
+    integer(int32) :: ncid, depth_id, frac_id, dids(2), history_len ! NetCDF ids
 
     write(output_unit,'(3a)') "Reading topography from file '", trim(filename), "'"
 
@@ -69,6 +71,12 @@ contains
     allocate(topog%frac(topog%nxt, topog%nyt))
     call handle_error(nf90_get_var(ncid, frac_id, topog%frac))
 
+    ! History (might not be present)
+    if (nf90_inquire_attribute(ncid, nf90_global, 'history', len=history_len) == nf90_noerr) then
+      allocate(character(len=history_len) :: topog%history)
+      call handle_error(nf90_get_att(ncid, nf90_global, 'history', topog%history))
+    end if
+
     ! Close file
     call handle_error(nf90_close(ncid))
 
@@ -96,6 +104,7 @@ contains
 
     ! Global attributes
     topog_out%original_file = topog_in%original_file
+    topog_out%history = topog_in%history
 
   end subroutine topography_copy
 
@@ -140,11 +149,31 @@ contains
 
     ! Write global attributes
     call handle_error(nf90_put_att(ncid, nf90_global, 'original_file', trim(this%original_file)))
+    call handle_error(nf90_put_att(ncid, nf90_global, 'history', trim(this%history)))
 
     ! Close file
     call handle_error(nf90_enddef(ncid))
+    call handle_error(nf90_close(ncid))
 
   end subroutine topography_write
+
+  !-------------------------------------------------------------------------
+  subroutine topography_update_history(this, command)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: command
+
+    character(len=:), allocatable :: new_history, old_history
+
+    new_history = date_time() // ": " // trim(command)
+    if (allocated(this%history)) then
+      old_history = this%history
+      deallocate(this%history)
+      this%history = old_history // " | " // trim(new_history)
+    else
+      this%history = trim(new_history)
+    end if
+
+  end subroutine topography_update_history
 
   !-------------------------------------------------------------------------
   subroutine topography_deseas(this)
@@ -355,8 +384,8 @@ contains
 
     call handle_error(nf90_close(ncid_lev))
 
-    write(output_unit,'(2a)') 'Setting minimum depth to ', this%min_depth
-    write(output_unit,'(2a)') 'Setting maximum depth to ', this%max_depth
+    write(output_unit,'(a,f7.2,a)') 'Setting minimum depth to ', this%min_depth, ' m'
+    write(output_unit,'(a,f7.2,a)') 'Setting maximum depth to ', this%max_depth, ' m'
 
     ! Reset depth
     do j = 1, this%nyt
@@ -526,10 +555,11 @@ contains
       deflate_level=1, shuffle=.true.))
     call handle_error(nf90_put_var(ncid, mask_id, mask))
 
-    call handle_error(nf90_put_att(ncid, nf90_global, 'history', 'Created from topography file '//trim(this%original_file)))
+    call handle_error(nf90_put_att(ncid, nf90_global, 'history', date_time()//": "//get_mycommand()))
 
     ! Close file
     call handle_error(nf90_enddef(ncid))
+    call handle_error(nf90_close(ncid))
 
     deallocate(mask)
 

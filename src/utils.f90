@@ -68,4 +68,47 @@ contains
 
   end subroutine quicksort
 
+  !-------------------------------------------------------------------------
+  ! Return a string with the date and time in the following format:
+  !  "day-name month-name hh:mm:ss YYYY zone"
+  character(len=30) function date_time()
+    character(len=3), parameter :: DAYS(7)    = ['Sun', 'Mon', 'Thu', 'Wed', 'Thu', 'Fri', 'Sat']
+    character(len=3), parameter :: MONTHS(12) = &
+      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    character(len=5)    :: zone
+    integer(kind=int64) :: d, dt(8)
+
+    call date_and_time(values=dt, zone=zone)
+    d = 1 + modulo(dt(1) + int((dt(1) - 1) / 4) - int((dt(1) - 1) / 100) + int((dt(1) - 1) / 400), 7_int64)
+
+    write(date_time, '(a,1x,a,1x,i0.2,1x,i0.2,":",i0.2,":",i0.2,1x,i4,1x,a)') &
+      DAYS(d), MONTHS(dt(2)), dt(3), dt(5), dt(6), dt(7), dt(1), zone
+
+  end function date_time
+
+  !-------------------------------------------------------------------------
+  ! Returns the command used to invoke the program with the path prefix removed
+  function get_mycommand() result(command)
+    character(len=:), allocatable :: command
+
+    integer :: i, length
+    character(len=:), allocatable :: full_cmd
+
+    call get_command(length=length)
+    allocate(character(len=length) :: full_cmd)
+    call get_command(full_cmd)
+
+    i = 0
+    do while (i < length)
+      i = i + 1
+      if (full_cmd(i:i) == " ") exit
+    end do
+    do while (i > 0)
+      i = i - 1
+      if (full_cmd(i:i) == "/") exit
+    end do
+    command = full_cmd(i+1:length)
+
+  end function get_mycommand
+
 end module utils
