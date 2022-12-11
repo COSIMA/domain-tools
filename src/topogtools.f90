@@ -147,16 +147,19 @@ program topogtools
   case ('deseas')
     topog = topography_t(file_in)
     call topog%deseas()
+    call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('min_max_depth')
     topog = topography_t(file_in)
     call topog%min_max_depth(vgrid, iget('level'))
+    call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('fix_nonadvective')
     topog = topography_t(file_in)
     call topog%nonadvective(vgrid, fix=.true.)
+    call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('check_nonadvective')

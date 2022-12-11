@@ -215,6 +215,7 @@ contains
     call handle_error(nf90_def_var(ncid_topo, 'depth_med', nf90_float, dids_topo, depth_med_id))
     call handle_error(nf90_def_var(ncid_topo, 'depth_all_med', nf90_float, dids_topo, depth_all_med_id))
     call handle_error(nf90_def_var(ncid_topo, 'sea_area_fraction', nf90_float, dids_topo, frac_id))
+    call handle_error(nf90_put_att(ncid_topo, nf90_global, 'history', date_time()//": "//get_mycommand()))
     call handle_error(nf90_enddef(ncid_topo))
 
     ! Do
