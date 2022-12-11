@@ -75,11 +75,19 @@ contains
     character(len=3), parameter :: DAYS(7)    = ['Sun', 'Mon', 'Thu', 'Wed', 'Thu', 'Fri', 'Sat']
     character(len=3), parameter :: MONTHS(12) = &
       ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    integer(kind=int64), parameter :: T(12) = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
     character(len=5)    :: zone
-    integer(kind=int64) :: d, dt(8)
+    integer(kind=int64) :: d, dt(8), yy
 
     call date_and_time(values=dt, zone=zone)
-    d = 1 + modulo(dt(1) + int((dt(1) - 1) / 4) - int((dt(1) - 1) / 100) + int((dt(1) - 1) / 400), 7_int64)
+
+    ! Use Tomohiko Sakamoto's Algorithm to find day of week
+    if (dt(2) <= 2) then
+      yy = dt(1) - 1
+    else
+      yy = dt(1)
+    end if
+    d = mod(yy + int((yy - 1) / 4) - int((yy - 1) / 100) + int((yy - 1) / 400) + T(dt(2)) + dt(3), 7_int64) + 1
 
     write(date_time, '(a,1x,a,1x,i0.2,1x,i0.2,":",i0.2,":",i0.2,1x,i4,1x,a)') &
       DAYS(d), MONTHS(dt(2)), dt(3), dt(5), dt(6), dt(7), dt(1), zone

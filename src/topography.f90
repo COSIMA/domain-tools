@@ -104,7 +104,9 @@ contains
 
     ! Global attributes
     topog_out%original_file = topog_in%original_file
-    topog_out%history = topog_in%history
+    if (allocated(topog_in%history)) then
+      topog_out%history = topog_in%history
+    end if
 
   end subroutine topography_copy
 
