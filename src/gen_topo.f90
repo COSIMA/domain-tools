@@ -35,6 +35,7 @@ contains
     integer(int32) :: ncid, vid, did           ! NetCDF ids
     integer(int32) :: ncid_topo, depth_id,depth_all_id, frac_id          ! NetCDF ids
     integer(int32) :: depth_med_id, depth_all_med_id          ! NetCDF ids
+    integer(int32) :: geolat_id, geolon_id          ! NetCDF ids
     integer(int32) :: xid, yid, hid          ! NetCDF ids
     integer(int32) :: dids(2)           ! NetCDF ids
     integer(int32) :: dids_topo(2)           ! NetCDF ids
@@ -215,6 +216,17 @@ contains
     call handle_error(nf90_def_var(ncid_topo, 'depth_med', nf90_float, dids_topo, depth_med_id))
     call handle_error(nf90_def_var(ncid_topo, 'depth_all_med', nf90_float, dids_topo, depth_all_med_id))
     call handle_error(nf90_def_var(ncid_topo, 'sea_area_fraction', nf90_float, dids_topo, frac_id))
+    call handle_error(nf90_def_var(ncid_topo, 'geolon_t', nf90_float, dids, geolon_id, chunksizes=[nxt/10, nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_put_att(ncid_topo, geolon_id, 'long_name', 'tracer longitude'))
+    call handle_error(nf90_put_att(ncid_topo, geolon_id, 'units', 'degrees_E'))
+    call handle_error(nf90_put_var(ncid_topo, geolon_id, x_t))
+
+    call handle_error(nf90_def_var(ncid_topo, 'geolat_t', nf90_float, dids, geolat_id, chunksizes=[nxt/10, nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_put_att(ncid_topo, geolat_id, 'long_name', 'tracer latitude'))
+    call handle_error(nf90_put_att(ncid_topo, geolat_id, 'units', 'degrees_N'))
+    call handle_error(nf90_put_var(ncid_topo, geolat_id, y_t))
     call handle_error(nf90_put_att(ncid_topo, nf90_global, 'history', date_time()//": "//get_mycommand()))
     call handle_error(nf90_enddef(ncid_topo))
 
