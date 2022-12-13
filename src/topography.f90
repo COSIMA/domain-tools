@@ -17,6 +17,8 @@ module topography
     character(len=3) :: nonadvective_cells_removed = 'yes'
     ! Sea area fraction variable
     real(real32), allocatable :: frac(:,:)
+    ! Coordinates
+    real(real64), allocatable :: geolon_t(:,:), geolat_t(:,:)
     ! Global attributes
     character(len=:), allocatable :: original_file
     character(len=:), allocatable :: history
@@ -41,7 +43,7 @@ contains
   type(topography_t) function topography_constructor(filename) result(topog)
     character(len=*), intent(in) :: filename
 
-    integer(int32) :: ncid, depth_id, frac_id, dids(2), history_len ! NetCDF ids
+    integer(int32) :: ncid, depth_id, frac_id, geolon_id, geolat_id, dids(2), history_len ! NetCDF ids
 
     write(output_unit,'(3a)') "Reading topography from file '", trim(filename), "'"
 
@@ -70,6 +72,14 @@ contains
     call handle_error(nf90_inq_varid(ncid, 'sea_area_fraction', frac_id))
     allocate(topog%frac(topog%nxt, topog%nyt))
     call handle_error(nf90_get_var(ncid, frac_id, topog%frac))
+
+    ! Get coordinates
+    call handle_error(nf90_inq_varid(ncid, 'geolon_t', geolon_id))
+    allocate(topog%geolon_t(topog%nxt, topog%nyt))
+    call handle_error(nf90_get_var(ncid, frac_id, topog%geolon_t))
+    call handle_error(nf90_inq_varid(ncid, 'geolat_t', geolat_id))
+    allocate(topog%geolat_t(topog%nxt, topog%nyt))
+    call handle_error(nf90_get_var(ncid, frac_id, topog%geolat_t))
 
     ! History (might not be present)
     if (nf90_inquire_attribute(ncid, nf90_global, 'history', len=history_len) == nf90_noerr) then
@@ -102,6 +112,10 @@ contains
     ! Sea area fraction
     allocate(topog_out%frac, source=topog_in%frac)
 
+    ! Coordinates
+    allocate(topog_out%geolon_t, source=topog_in%geolon_t)
+    allocate(topog_out%geolat_t, source=topog_in%geolat_t)
+
     ! Global attributes
     topog_out%original_file = topog_in%original_file
     if (allocated(topog_in%history)) then
@@ -115,7 +129,7 @@ contains
     class(topography_t), intent(in) :: this
     character(len=*), intent(in) :: filename
 
-    integer(int32) :: ncid, depth_id, frac_id, dids(2) ! NetCDF ids
+    integer(int32) :: ncid, depth_id, frac_id, geolon_id, geolat_id, dids(2) ! NetCDF ids
 
     write(output_unit,'(3a)') "Writing topography to file '", trim(filename), "'"
 
@@ -148,6 +162,19 @@ contains
       deflate_level=1, shuffle=.true.))
     call handle_error(nf90_def_var_fill(ncid, frac_id, 0, MISSING_VALUE))
     call handle_error(nf90_put_var(ncid, frac_id, this%frac))
+
+    ! Write coordinates
+    call handle_error(nf90_def_var(ncid, 'geolon_t', nf90_float, dids, geolon_id, chunksizes=[this%nxt/10, this%nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_put_att(ncid, geolon_id, 'long_name', 'tracer longitude'))
+    call handle_error(nf90_put_att(ncid, geolon_id, 'units', 'degrees_E'))
+    call handle_error(nf90_put_var(ncid, geolon_id, this%geolon_t))
+
+    call handle_error(nf90_def_var(ncid, 'geolat_t', nf90_float, dids, geolat_id, chunksizes=[this%nxt/10, this%nyt/10], &
+      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_put_att(ncid, geolat_id, 'long_name', 'tracer latitude'))
+    call handle_error(nf90_put_att(ncid, geolat_id, 'units', 'degrees_N'))
+    call handle_error(nf90_put_var(ncid, geolat_id, this%geolat_t))
 
     ! Write global attributes
     call handle_error(nf90_put_att(ncid, nf90_global, 'original_file', trim(this%original_file)))
