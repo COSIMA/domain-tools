@@ -72,7 +72,7 @@ contains
   ! Return a string with the date and time in the following format:
   !  "day-name month-name hh:mm:ss YYYY zone"
   character(len=30) function date_time()
-    character(len=3), parameter :: DAYS(7)    = ['Sun', 'Mon', 'Thu', 'Wed', 'Thu', 'Fri', 'Sat']
+    character(len=3), parameter :: DAYS(7)    = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     character(len=3), parameter :: MONTHS(12) = &
       ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     integer(kind=int64), parameter :: T(12) = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
