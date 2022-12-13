@@ -161,6 +161,7 @@ contains
 
   !-------------------------------------------------------------------------
   subroutine topography_update_history(this, command)
+    use iso_c_binding
     class(topography_t), intent(inout) :: this
     character(len=*), intent(in) :: command
 
@@ -170,7 +171,7 @@ contains
     if (allocated(this%history)) then
       old_history = this%history
       deallocate(this%history)
-      this%history = old_history // " | " // trim(new_history)
+      this%history = trim(new_history) // C_NEW_LINE // old_history
     else
       this%history = trim(new_history)
     end if
