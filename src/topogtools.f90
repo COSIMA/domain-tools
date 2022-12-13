@@ -5,13 +5,18 @@ program topogtools
   use topography
   implicit none
 
+  character(len=5), PARAMETER :: VERSION = "1.0.0"
+
   character(len=:), allocatable :: name
   character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:)
   character(len=:), allocatable :: help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
+  character(len=80) :: version_text(1)
   character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
   type(topography_t) :: topog
   real(real32) :: sea_area_fraction
   integer :: ii
+
+  version_text(1) = 'topogtools version '//VERSION
 
   ! Help texts
   help_general = [character(len=80) :: &
@@ -90,20 +95,20 @@ program topogtools
   select case (name)
   case ('gen_topo')
     call set_args('--input:i "unset" --output:o "unset" --hgrid "ocean_hgrid.nc" --tripolar F --longitude-offset 0.0', &
-      help_gen_topo)
+      help_gen_topo, version_text)
   case ('deseas')
-    call set_args('--input:i "unset" --output:o "unset"', help_deseas)
+    call set_args('--input:i "unset" --output:o "unset"', help_deseas, version_text)
   case ('min_max_depth')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level 0', help_min_max_depth)
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level 0', help_min_max_depth, version_text)
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"', help_fix_nonadvective)
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc"', help_fix_nonadvective, version_text)
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"', help_check_nonadvective)
+    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc"', help_check_nonadvective, version_text)
   case ('mask')
-    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_mask)
+    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_mask, version_text)
   case ('')
     ! Print help in case the user specified the --help flag
-    call set_args(' ', help_general)
+    call set_args(' ', help_general, version_text)
     ! Also print even if the user did not specify --help
     if (.not. lget('help')) then
       write(output_unit,'(g0)') (trim(help_general(ii)), ii=1, size(help_general))
