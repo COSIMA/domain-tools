@@ -431,10 +431,10 @@ contains
   end subroutine topography_min_max_depth
 
   !-------------------------------------------------------------------------
-  subroutine topography_nonadvective(this, vgrid, fix)
+  subroutine topography_nonadvective(this, vgrid, potholes, coastal, fix)
     class(topography_t), intent(inout) :: this
     character(len=*), intent(in) :: vgrid
-    logical, intent(in) :: fix
+    logical, intent(in) :: potholes, coastal, fix
 
     real(real32), allocatable :: depth_halo(:,:)
     integer(int32), allocatable :: num_levels(:,:)
@@ -489,61 +489,65 @@ contains
         end do
       end do
 
-      do j = 2, this%nyt - 1
-        do i = 1, this%nxt
-          if (depth_halo(i, j) > 0.5) then
-            sw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j-1) < 0.5 .or. depth_halo(i, j-1) < 0.5
-            se = depth_halo(i, j-1) < 0.5 .or. depth_halo(i+1, j-1) < 0.5 .or. depth_halo(i+1, j) < 0.5
-            ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
-            nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
-            if (all([se, sw, ne, nw])) then
-              if (fix) then
-                depth_halo(i, j) = 0.0
-                this%frac(i, j) = 0.0
-                num_levels(i, j) = 0
+      if (coastal) then
+        do j = 2, this%nyt - 1
+          do i = 1, this%nxt
+            if (depth_halo(i, j) > 0.5) then
+              sw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j-1) < 0.5 .or. depth_halo(i, j-1) < 0.5
+              se = depth_halo(i, j-1) < 0.5 .or. depth_halo(i+1, j-1) < 0.5 .or. depth_halo(i+1, j) < 0.5
+              ne = depth_halo(i+1, j) < 0.5 .or. depth_halo(i, j+1) < 0.5 .or. depth_halo(i+1, j+1) < 0.5
+              nw = depth_halo(i-1, j) < 0.5 .or. depth_halo(i-1, j+1) < 0.5 .or. depth_halo(i, j+1) < 0.5
+              if (all([se, sw, ne, nw])) then
+                if (fix) then
+                  depth_halo(i, j) = 0.0
+                  this%frac(i, j) = 0.0
+                  num_levels(i, j) = 0
+                end if
+                counter = counter + 1
+                write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
               end if
-              counter = counter + 1
-              write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
             end if
-          end if
+          end do
         end do
-      end do
 
-      write(output_unit,*) '1', counter
+        write(output_unit,*) '1', counter
+      end if
 
-      do j = 2, this%nyt
-        jm = j - 1
-        jp = j + 1
-        do i = 1, this%nxt
-          im = i - 1
-          ip = i + 1
-          if (num_levels(i, j) > 0) then
-            ksw = minval([num_levels(im, jm), num_levels(i, jm), num_levels(im, j)])
-            kse = minval([num_levels(i, jm), num_levels(ip, jm), num_levels(ip, j)])
-            knw = minval([num_levels(im, j), num_levels(im,jp), num_levels(i, jp)])
-            kne = minval([num_levels(ip, j), num_levels(i,jp), num_levels(ip, jp)])
+      if (potholes) then
+        do j = 2, this%nyt
+          jm = j - 1
+          jp = j + 1
+          do i = 1, this%nxt
+            im = i - 1
+            ip = i + 1
+            if (num_levels(i, j) > 0) then
+              ksw = minval([num_levels(im, jm), num_levels(i, jm), num_levels(im, j)])
+              kse = minval([num_levels(i, jm), num_levels(ip, jm), num_levels(ip, j)])
+              knw = minval([num_levels(im, j), num_levels(im,jp), num_levels(i, jp)])
+              kne = minval([num_levels(ip, j), num_levels(i,jp), num_levels(ip, jp)])
 
-            kmu_max = maxval([ksw, kse, knw, kne])
+              kmu_max = maxval([ksw, kse, knw, kne])
 
-            if (num_levels(i, j) > kmu_max) then
-              if (fix) then
-                num_levels(i, j) = kmu_max
-                depth_halo(i, j) = zw(kmu_max)
-              else
-                write(output_unit,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+              if (num_levels(i, j) > kmu_max) then
+                if (fix) then
+                  num_levels(i, j) = kmu_max
+                  depth_halo(i, j) = zw(kmu_max)
+                else
+                  write(output_unit,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+                end if
+                counter = counter + 1
               end if
-              counter = counter + 1
             end if
-          end if
+          end do
         end do
-      end do
+        write(output_unit,*) counter
+      end if
       if (counter > 0 .and. fix) changes_made = .true.
-      write(output_unit,*) counter
       this%depth = depth_halo(1:this%nxt, 1:this%nyt)
       if (counter == 0 .and. fix) exit
     end do
 
-    if (fix) then
+    if (fix .and. (coastal .or. potholes)) then
       this%nonadvective_cells_removed = 'yes'
       if (changes_made) then
         this%lakes_removed = 'no'
