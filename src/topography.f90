@@ -549,8 +549,9 @@ contains
 
     if (fix .and. (coastal .or. potholes)) then
       this%nonadvective_cells_removed = 'yes'
-      if (changes_made) then
-        this%lakes_removed = 'no'
+      if (changes_made .and. this%lakes_removed == 'yes') then
+        ! We might have created new lakes, so rerun deseas
+        call this%deseas()
       end if
     end if
 
