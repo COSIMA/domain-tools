@@ -101,3 +101,16 @@ Creates a land mask from a topography.
 
 Options
   * `--fraction <frac>`  cells with a fraction of sea area smaller than `<frac>` will be set as land (default '0.0')
+
+
+## float_vgrid
+
+```
+usage: float_vgrid [--vgrid <vgrid>]
+```
+
+Alter values in ocean vertical grid so they can be used with both single- and
+double-precision topography file.
+
+Options
+  * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')

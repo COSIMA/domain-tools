@@ -27,9 +27,12 @@ target_link_libraries(topography PRIVATE NetCDF::NetCDF_Fortran
 add_executable(topogtools src/topogtools.f90)
 target_link_libraries(topogtools PRIVATE topography M_CLI2)
 
+add_executable(float_vgrid src/float_vgrid.f90)
+target_link_libraries(float_vgrid PRIVATE topography M_CLI2)
+
 # Installation
 include(GNUInstallDirs)
 
-install(TARGETS topogtools
+install(TARGETS topogtools float_vgrid
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
