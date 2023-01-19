@@ -61,25 +61,34 @@ Options
 ### check_nonadvective
 
 ```
-usage: topogtools check_nonadvective --input <input_file> [--vgrid <vgrid>]
+usage: topogtools check_nonadvective --input <input_file>
+                                     [--vgrid <vgrid> --potholes --coastal-cells]
 ```
 
-Check for cells that are nonadvective on a B grid.
+Check for non-advective cells. There are two types of checks available: potholes
+and non-advective coastal cells. Checking for non-advective coastal cells should
+only be needed when using a B-grid.
 
 Options
-  * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
+  * `--potholes`      check for potholes
+  * `--coastal-cells` check for non-advective coastal cells
 
 ### fix_nonadvective
 
 ```
 usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
-                                   [--vgrid <vgrid>]
+                                   [--vgrid <vgrid> --potholes --coastal-cells]
 ```
 
-Fix cells that are non-advective on a B grid.
+Fix non-advective cells. There are two types of fixes available: potholes and
+non-advective coastal cells. Fixes to non-advective coastal cells should only be
+needed when using a B-grid.
 
 Options
-  * --vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
+  * `--potholes`      fix potholes
+  * `--coastal-cells` fix non-advective coastal cells
 
 ### mask
 
