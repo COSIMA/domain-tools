@@ -20,8 +20,8 @@ add_library(topography
   src/gen_topo.f90
   src/kdtree2.f90
 )
-target_link_libraries(topography PRIVATE NetCDF::NetCDF_Fortran
-                                         M_CLI2)
+target_link_libraries(topography PUBLIC NetCDF::NetCDF_Fortran
+                                 PRIVATE M_CLI2)
 
 # Executables
 add_executable(topogtools src/topogtools.f90)
