@@ -38,10 +38,11 @@ program topogtools
     '                           --hgrid <grid> [<options>]                           ', &
     '                                                                                ', &
     'Generate a new topography from <input_file> on the tracer points of <grid> and  ', &
-    'writes the result to <output_file>. Note that <grid> must be a super-grid       ', &
+    'writes the result to <output_file>. Note that <grid> must be a super-grid.      ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --tripolar                  horizontal grid is a tripolar grid              ', &
+    '    --tripolar                  set this option if the horizontal grid is a     ', &
+    '                                tripolar grid                                   ', &
     '    --longitude-offset <value>  offset (in degrees) between the central         ', &
     '                                longitude of the ocean horizontal grid and of   ', &
     '                                the bathymetry grid (default ''0.0'')             ', &
