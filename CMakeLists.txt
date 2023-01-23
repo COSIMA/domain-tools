@@ -20,15 +20,16 @@ add_library(topography
   src/gen_topo.f90
   src/kdtree2.f90
 )
-target_link_libraries(topography PUBLIC NetCDF::NetCDF_Fortran
-                                 PRIVATE M_CLI2)
+target_link_libraries(topography PRIVATE M_CLI2 NetCDF::NetCDF_Fortran)
 
 # Executables
 add_executable(topogtools src/topogtools.f90)
 target_link_libraries(topogtools PRIVATE topography M_CLI2)
 
 add_executable(float_vgrid src/float_vgrid.f90)
-target_link_libraries(float_vgrid PRIVATE topography M_CLI2)
+target_link_libraries(float_vgrid PRIVATE topography
+                                          M_CLI2
+                                          NetCDF::NetCDF_Fortran)
 
 # Installation
 include(GNUInstallDirs)
