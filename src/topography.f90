@@ -24,6 +24,7 @@ module topography
     character(len=:), allocatable :: history
   contains
     procedure :: write => topography_write
+    procedure :: write_coordinates => topography_write_coordinates
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
     procedure :: update_history => topography_update_history
@@ -164,6 +165,26 @@ contains
     call handle_error(nf90_put_var(ncid, frac_id, this%frac))
 
     ! Write coordinates
+    call this%write_coordinates(ncid, dids)
+
+    ! Write global attributes
+    call handle_error(nf90_put_att(ncid, nf90_global, 'original_file', trim(this%original_file)))
+    call handle_error(nf90_put_att(ncid, nf90_global, 'history', trim(this%history)))
+
+    ! Close file
+    call handle_error(nf90_enddef(ncid))
+    call handle_error(nf90_close(ncid))
+
+  end subroutine topography_write
+
+  !-------------------------------------------------------------------------
+  subroutine topography_write_coordinates(this, ncid, dids)
+    class(topography_t), intent(in) :: this
+    integer(int32), intent(in) :: ncid, dids(2)
+
+    integer(int32) :: geolon_id, geolat_id ! NetCDF ids
+
+    ! Write coordinates
     call handle_error(nf90_def_var(ncid, 'geolon_t', nf90_float, dids, geolon_id, chunksizes=[this%nxt/10, this%nyt/10], &
       deflate_level=1, shuffle=.true.))
     call handle_error(nf90_put_att(ncid, geolon_id, 'long_name', 'tracer longitude'))
@@ -176,15 +197,7 @@ contains
     call handle_error(nf90_put_att(ncid, geolat_id, 'units', 'degrees_N'))
     call handle_error(nf90_put_var(ncid, geolat_id, this%geolat_t))
 
-    ! Write global attributes
-    call handle_error(nf90_put_att(ncid, nf90_global, 'original_file', trim(this%original_file)))
-    call handle_error(nf90_put_att(ncid, nf90_global, 'history', trim(this%history)))
-
-    ! Close file
-    call handle_error(nf90_enddef(ncid))
-    call handle_error(nf90_close(ncid))
-
-  end subroutine topography_write
+  end subroutine topography_write_coordinates
 
   !-------------------------------------------------------------------------
   subroutine topography_update_history(this, command)
@@ -584,6 +597,9 @@ contains
     ! Write dimensions
     call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
     call handle_error(nf90_def_dim(ncid, 'ny', this%nyt, dids(2)))
+
+    ! Write coordinates
+    call this%write_coordinates(ncid, dids)
 
     ! Write mask
     call handle_error(nf90_def_var(ncid, 'mask', nf90_float, dids, mask_id, chunksizes=[this%nxt/10, this%nyt/10], &
