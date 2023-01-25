@@ -76,10 +76,10 @@ contains
     ! Get coordinates
     call handle_error(nf90_inq_varid(ncid, 'geolon_t', geolon_id))
     allocate(topog%geolon_t(topog%nxt, topog%nyt))
-    call handle_error(nf90_get_var(ncid, frac_id, topog%geolon_t))
+    call handle_error(nf90_get_var(ncid, geolon_id, topog%geolon_t))
     call handle_error(nf90_inq_varid(ncid, 'geolat_t', geolat_id))
     allocate(topog%geolat_t(topog%nxt, topog%nyt))
-    call handle_error(nf90_get_var(ncid, frac_id, topog%geolat_t))
+    call handle_error(nf90_get_var(ncid, geolat_id, topog%geolat_t))
 
     ! History (might not be present)
     if (nf90_inquire_attribute(ncid, nf90_global, 'history', len=history_len) == nf90_noerr) then
