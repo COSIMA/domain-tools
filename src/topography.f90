@@ -29,6 +29,7 @@ module topography
     generic   :: assignment(=) => copy
     procedure :: update_history => topography_update_history
     procedure :: deseas => topography_deseas
+    procedure :: fill_fraction => topography_fill_fraction
     procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
@@ -444,6 +445,29 @@ contains
   end subroutine topography_min_max_depth
 
   !-------------------------------------------------------------------------
+  subroutine topography_fill_fraction(this, sea_area_fraction)
+    class(topography_t), intent(inout) :: this
+    real(real32), intent(in) :: sea_area_fraction
+
+    write(output_unit,'(a,f7.2)') "Filling cells that have a sea area fraction smaller than ", sea_area_fraction
+
+    if (any(this%frac < sea_area_fraction)) then
+      where (this%frac < sea_area_fraction)
+        this%depth = 0.0
+        this%frac = 0.0
+      end where
+
+      if (this%lakes_removed == 'yes') then
+        ! We might have created new lakes, so rerun deseas
+        call this%deseas()
+      end if
+    end if
+
+    write(output_unit,'(a)') "Done"
+
+  end subroutine topography_fill_fraction
+
+  !-------------------------------------------------------------------------
   subroutine topography_nonadvective(this, vgrid, potholes, coastal, fix)
     class(topography_t), intent(inout) :: this
     character(len=*), intent(in) :: vgrid
@@ -571,10 +595,9 @@ contains
   end subroutine topography_nonadvective
 
   !-------------------------------------------------------------------------
-  subroutine topography_mask(this, filename, sea_area_fraction)
+  subroutine topography_mask(this, filename)
     class(topography_t), intent(in) :: this
     character(len=*), intent(in) :: filename
-    real(real32), intent(in) :: sea_area_fraction
 
     integer(int32) :: ncid, mask_id, dids(2) ! NetCDF ids
     real(real32), allocatable :: mask(:, :)
@@ -583,7 +606,7 @@ contains
 
     allocate(mask(this%nxt, this%nyt))
 
-    where (this%depth <= 0.0 .or. this%frac < sea_area_fraction) ! Land
+    where (this%depth <= 0.0) ! Land
       mask = 0.0
     elsewhere ! Ocean
       mask = 1.0
