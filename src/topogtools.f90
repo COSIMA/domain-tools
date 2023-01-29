@@ -180,7 +180,7 @@ program topogtools
 
   case ('fill_fraction')
     sea_area_fraction = rget('fraction')
-    if (sea_area_fraction <= 0.0 .and. sea_area_fraction >= 1.0) then
+    if (sea_area_fraction <= 0.0 .or. sea_area_fraction >= 1.0) then
       write(error_unit,'(a)') "ERROR: sea area fraction must be larger than 0 and smaller than 1"
       error stop
     end if
