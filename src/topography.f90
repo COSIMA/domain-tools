@@ -459,7 +459,7 @@ contains
 
       if (this%lakes_removed == 'yes') then
         ! We might have created new lakes, so rerun deseas
-        call this%deseas()
+        this%lakes_removed = 'no'
       end if
     end if
 

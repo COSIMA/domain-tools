@@ -65,11 +65,11 @@ program topogtools
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
     '']
   help_fill_fraction = [character(len=80) :: &
-    'usage: topogtools fill_fraction  --input <input_file> --output <output_file>    ', &
-    '                                 --fraction <frac>                              ', &
+    'usage: topogtools fill_fraction --input <input_file> --output <output_file>     ', &
+    '                                --fraction <frac>                               ', &
     '                                                                                ', &
-    'cells with a fraction of sea area smaller than <frac> will have their depth set ', &
-    'to zero. Can produce non-advective cells.                                       ', &
+    'Cells with a fraction of sea area smaller than <frac> will have their depth set ', &
+    'to zero. Can produce non-advective cells and/or new seas.                       ', &
     '']
   help_fix_nonadvective = [character(len=80) :: &
     'usage: topogtools fix_nonadvective --input <input_file> --output <output_file>  ', &
