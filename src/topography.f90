@@ -521,6 +521,7 @@ contains
     logical :: changes_made = .false.
     integer(int32) :: kse, ksw, kne, knw, kmu_max
     integer(int32) :: im, ip, jm, jp
+    integer(int32) :: nseas
 
     call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
     call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
@@ -625,8 +626,12 @@ contains
     if (fix .and. (coastal .or. potholes)) then
       this%nonadvective_cells_removed = 'yes'
       if (changes_made .and. this%lakes_removed == 'yes') then
-        ! We might have created new lakes, so rerun deseas
-        call this%deseas()
+        ! Check if new lakes were created new lakes
+        call this%number_seas(number_of_seas = nseas, silent=.true.)
+        if (nseas > 1) then
+          write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
+          this%lakes_removed = 'no'
+        end if
       end if
     end if
 
