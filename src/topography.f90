@@ -28,6 +28,7 @@ module topography
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
     procedure :: update_history => topography_update_history
+    procedure :: number_seas => topography_number_seas
     procedure :: deseas => topography_deseas
     procedure :: fill_fraction => topography_fill_fraction
     procedure :: nonadvective => topography_nonadvective
@@ -220,23 +221,33 @@ contains
   end subroutine topography_update_history
 
   !-------------------------------------------------------------------------
-  subroutine topography_deseas(this)
-    class(topography_t), intent(inout) :: this
+  subroutine topography_number_seas(this, sea_number, silent)
+    class(topography_t), intent(in) :: this
+    integer(int16), intent(out), target, optional :: sea_number(:,:)
+    logical, intent(in), optional :: silent
 
-    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock
+    integer(int32) :: i, j, counter, its, its1, its2, sea_num
     integer(int32) :: im, ip, jm, jp, land
 
-    integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
-
     integer(int16) :: new_sea
-    integer(int16), allocatable :: sea(:,:)
+    integer(int16), pointer :: sea(:,:)
 
-    logical :: choke_west, choke_east, choke_north, choke_south
+    logical :: silent_, choke_west, choke_east, choke_north, choke_south
 
-    allocate(sea(this%nxt, this%nyt))
+    integer(int16), parameter :: MAX_ITER = 150
+
+    if (present(sea_number)) then
+      sea => sea_number
+    else
+      allocate(sea(this%nxt, this%nyt))
+    end if
+    if (present(silent)) then
+      silent_ = silent
+    else
+      silent_ = .false.
+    end if
 
     ! Do
-    write(output_unit,'(a)') "Removing seas"
     land = this%nxt + this%nyt + 1
     sea = land
     do j = 1, this%nyt
@@ -246,7 +257,9 @@ contains
       if (all(this%depth(:, j) > 0.0)) sea(:, j) = 0  ! Southern Ocean all water across
     end do
 
-    do its = 1, 150   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
+    if (.not. silent_) write(output_unit,'(a)') "       # Iter   # Changes      # Seas"
+
+    do its = 1, MAX_ITER   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
       counter = 0
       sea_num = 0
 
@@ -363,24 +376,36 @@ contains
           counter = counter + 1
         end if
       end do
-      write(output_unit,*) counter, sea_num
+
+      if (.not. silent_) write(output_unit,*) its, counter, sea_num + 1
 
       ! If we only have one sea or no changes are made we are finished.
-      if (counter == 0 .or. sea_num == 1) exit
+      if (counter == 0 .or. sea_num + 1 == 1) exit
+      if (its == MAX_ITER) then
+        write(output_unit, '(a)') "WARNING: could not number all the seas. Algorithm reached maximum number of iterations."
+      end if
     end do
 
-    write(output_unit,'(a)') "Done"
+    if (present(sea_number)) then
+      nullify(sea)
+    else
+      deallocate(sea)
+    end if
 
-    ! Write out new topography
-    do j = 1, this%nyt
-      do i = 1, this%nxt
-        if (sea(i, j) > 0) then
-          this%depth(i, j) = MISSING_VALUE
-          this%frac(i, j) = MISSING_VALUE
-        end if
-      end do
-    end do
-    this%lakes_removed = "yes"
+  end subroutine topography_number_seas
+
+  !-------------------------------------------------------------------------
+  subroutine topography_deseas(this)
+    class(topography_t), intent(inout) :: this
+
+    integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
+    integer(int16), allocatable :: sea(:,:)
+
+    allocate(sea(this%nxt, this%nyt))
+
+    write(output_unit,'(a)') "Numbering seas"
+
+    call this%number_seas(sea_number=sea)
 
     call handle_error(nf90_create(trim('sea_num.nc'), ior(nf90_netcdf4, nf90_clobber), ncid))
     call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
@@ -390,6 +415,15 @@ contains
     call handle_error(nf90_enddef(ncid))
     call handle_error(nf90_put_var(ncid, sea_id, sea))
     call handle_error(nf90_close(ncid))
+
+    write(output_unit,'(a)') "Removing seas"
+    where(sea > 0)
+      this%depth = MISSING_VALUE
+      this%frac = MISSING_VALUE
+    end where
+    this%lakes_removed = "yes"
+
+    deallocate(sea)
 
   end subroutine topography_deseas
 
