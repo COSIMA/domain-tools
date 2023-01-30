@@ -9,7 +9,7 @@ program topogtools
 
   character(len=:), allocatable :: name
   character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:)
-  character(len=:), allocatable :: help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
+  character(len=:), allocatable :: help_fill_fraction(:), help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
   character(len=80) :: version_text(1)
   character(len=:), allocatable :: file_in, file_out, hgrid, vgrid, grid_type
   type(topography_t) :: topog
@@ -29,6 +29,7 @@ program topogtools
     '  gen_topo - Generate a new topography file from a bathymetry                   ', &
     '  deseas - Remove enclosed seas                                                 ', &
     '  min_max_depth - Set minimum and maximum depth                                 ', &
+    '  fill_fraction - Fill cells where sea area fraction is smaller than some value ', &
     '  check_nonadvective - Check for non-advective cells                            ', &
     '  fix_nonadvective - Fix non-advective cells                                    ', &
     '  mask - Generate mask                                                          ', &
@@ -63,6 +64,13 @@ program topogtools
     'Options                                                                         ', &
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
     '']
+  help_fill_fraction = [character(len=80) :: &
+    'usage: topogtools fill_fraction --input <input_file> --output <output_file>     ', &
+    '                                --fraction <frac>                               ', &
+    '                                                                                ', &
+    'Cells with a fraction of sea area smaller than <frac> will have their depth set ', &
+    'to zero. Can produce non-advective cells and/or new seas.                       ', &
+    '']
   help_fix_nonadvective = [character(len=80) :: &
     'usage: topogtools fix_nonadvective --input <input_file> --output <output_file>  ', &
     '                                   [--vgrid <vgrid> --potholes --coastal_cells] ', &
@@ -91,13 +99,8 @@ program topogtools
     '']
   help_mask = [character(len=80) :: &
     'usage: topogtools mask  --input <input_file> --output <output_file>             ', &
-    '                        [--fraction <frac>]                                     ', &
     '                                                                                ', &
     'Creates a land mask from a topography.                                          ', &
-    '                                                                                ', &
-    'Options                                                                         ', &
-    '    --fraction <frac>  cells with a fraction of sea area smaller than <frac>    ', &
-    '                       will be set as land (default ''0.0'')                    ', &
     '']
 
   ! Read command line
@@ -110,6 +113,8 @@ program topogtools
     call set_args('--input:i "unset" --output:o "unset"', help_deseas, version_text)
   case ('min_max_depth')
     call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level 0', help_min_max_depth, version_text)
+  case('fill_fraction')
+    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_fill_fraction, version_text)
   case ('fix_nonadvective')
     call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --potholes T --coastal-cells F', &
       help_fix_nonadvective, version_text)
@@ -117,7 +122,7 @@ program topogtools
     call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --potholes T --coastal-cells F', &
       help_check_nonadvective, version_text)
   case ('mask')
-    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_mask, version_text)
+    call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
   case ('')
     ! Print help in case the user specified the --help flag
     call set_args(' ', help_general, version_text)
@@ -140,7 +145,7 @@ program topogtools
   call check_file_exist(file_in)
 
   select case (name)
-  case ('gen_topo', 'deseas', 'min_max_depth', 'fix_nonadvective', 'mask')
+  case ('gen_topo', 'deseas', 'min_max_depth', 'fill_fraction', 'fix_nonadvective', 'mask')
     file_out = sget('output')
     if (file_out == 'unset') then
       write(error_unit,'(a)') 'ERROR: no output file specified'
@@ -173,6 +178,17 @@ program topogtools
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
+  case ('fill_fraction')
+    sea_area_fraction = rget('fraction')
+    if (sea_area_fraction <= 0.0 .or. sea_area_fraction >= 1.0) then
+      write(error_unit,'(a)') "ERROR: sea area fraction must be larger than 0 and smaller than 1"
+      error stop
+    end if
+    topog = topography_t(file_in)
+    call topog%fill_fraction(sea_area_fraction)
+    call topog%update_history(get_mycommand())
+    call topog%write(file_out)
+
   case ('fix_nonadvective')
     topog = topography_t(file_in)
     call topog%nonadvective(vgrid, lget('potholes'), lget('coastal-cells'), fix=.true.)
@@ -184,13 +200,8 @@ program topogtools
     call topog%nonadvective(vgrid, lget('potholes'), lget('coastal-cells'), fix=.false.)
 
   case ('mask')
-    sea_area_fraction = rget('fraction')
-    if (sea_area_fraction < 0.0 .and. sea_area_fraction > 1.0) then
-      write(error_unit,'(a)') "ERROR: sea area fraction must be between 0 and 1"
-      error stop
-    end if
     topog = topography_t(file_in)
-    call topog%mask(file_out, sea_area_fraction)
+    call topog%mask(file_out)
 
   end select
 

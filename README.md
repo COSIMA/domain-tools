@@ -58,6 +58,16 @@ Can produce non-advective cells.
 Options
   * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
 
+### fill_fraction
+
+```
+usage: topogtools fill_fraction --input <input_file> --output <output_file>
+                                --fraction <frac>
+```
+
+Cells with a fraction of sea area smaller than <frac> will have their depth set
+to zero. Can produce non-advective cells and/or new seas.
+
 ### check_nonadvective
 
 ```
