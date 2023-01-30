@@ -325,8 +325,8 @@ contains
           end if
         end do
         i = this%nxt
-        im = 1
-        ip = i - 1
+        ip = 1
+        im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
           sea(i,j)=min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
@@ -367,8 +367,8 @@ contains
           end if
         end do
         i = this%nxt
-        im = 1
-        ip = i - 1
+        ip = 1
+        im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
           sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
