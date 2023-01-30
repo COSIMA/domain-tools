@@ -228,6 +228,7 @@ contains
 
     integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
 
+    integer(int16) :: new_sea
     integer(int16), allocatable :: sea(:,:)
 
     logical :: choke_west, choke_east, choke_north, choke_south
@@ -306,16 +307,21 @@ contains
           if (sea(i, j) < land .and. sea(i, j) > 0) then
             if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
               sea(i, j) = land
+              counter = counter + 1
             else
               !get chokes
               choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
               choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
               choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
               choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
                 mask=[choke_west, choke_east, choke_south, choke_north]), land)
+              if (sea(i, j) /= new_sea) then
+                sea(i, j) = new_sea
+                counter = counter + 1
+              end if
             end if
-            counter = counter + 1
+
           end if
         end do
         i = this%nxt
@@ -344,16 +350,20 @@ contains
           if (sea(i, j) < land .and. sea(i, j) > 0) then
             if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
               sea(i, j) = land
+              counter = counter + 1
             else
               !get chokes
               choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
               choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
               choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
               choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
                 mask=[choke_west, choke_east, choke_south, choke_north]), land)
+              if (sea(i, j) /= new_sea) then
+                sea(i, j) = new_sea
+                counter = counter + 1
+              end if
             end if
-            counter = counter + 1
           end if
         end do
         i = this%nxt
