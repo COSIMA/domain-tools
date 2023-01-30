@@ -223,7 +223,7 @@ contains
   subroutine topography_deseas(this)
     class(topography_t), intent(inout) :: this
 
-    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock, counter2
+    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock
     integer(int32) :: im, ip, jm, jp, land
 
     integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
@@ -247,36 +247,32 @@ contains
 
     do its = 1, 150   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
       counter = 0
-      sea_num = 1
+      sea_num = 0
 
       ! Get number of seas
       do j = 2, this%nyt - 1
         i = 1
-        jm = j - 1
-        jp = j + 1
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i, j) >= sea_num) then
-            sea(i, j) = sea_num
+          if (sea(i, j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(this%nxt, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+            sea(i, j) = sea_num
           end if
         end if
 
         do i = 2, this%nxt - 1
-          im = i - 1
-          ip = i + 1
           if (sea(i, j) < land  .and. sea(i, j) > 0) then
-            if (sea(i, j) >= sea_num) then
-              sea(i, j) = sea_num
+            if (sea(i, j) > sea_num) then
               sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+              sea(i, j) = sea_num
             end if
           end if
         end do
 
         i = this%nxt
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i, j) >= sea_num) then
-            sea(i, j) = sea_num
+          if (sea(i, j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(1, j), sea(i, j+1)), sea_num)
+            sea(i, j) = sea_num
           end if
         end if
       end do
@@ -284,9 +280,9 @@ contains
       j = this%nyt
       do i = 2, this%nxt - 1
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i,j) >= sea_num) then
-            sea(i,j) = sea_num
+          if (sea(i,j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j)), sea_num)
+            sea(i,j) = sea_num
           end if
         end if
       end do
