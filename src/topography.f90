@@ -221,9 +221,10 @@ contains
   end subroutine topography_update_history
 
   !-------------------------------------------------------------------------
-  subroutine topography_number_seas(this, sea_number, silent)
+  subroutine topography_number_seas(this, sea_number, number_of_seas, silent)
     class(topography_t), intent(in) :: this
     integer(int16), intent(out), target, optional :: sea_number(:,:)
+    integer(int32), intent(out), optional :: number_of_seas
     logical, intent(in), optional :: silent
 
     integer(int32) :: i, j, counter, its, its1, its2, sea_num
@@ -392,6 +393,10 @@ contains
       deallocate(sea)
     end if
 
+    if (present(number_of_seas)) then
+      number_of_seas = sea_num + 1
+    end if
+
   end subroutine topography_number_seas
 
   !-------------------------------------------------------------------------
@@ -478,6 +483,8 @@ contains
     class(topography_t), intent(inout) :: this
     real(real32), intent(in) :: sea_area_fraction
 
+    integer(int32) :: nseas
+
     write(output_unit,'(a,f7.2)') "Filling cells that have a sea area fraction smaller than ", sea_area_fraction
 
     if (any(this%frac < sea_area_fraction)) then
@@ -487,12 +494,14 @@ contains
       end where
 
       if (this%lakes_removed == 'yes') then
-        ! We might have created new lakes, so update the corresponding attribute
-        this%lakes_removed = 'no'
+        ! Check if new seas have been created
+        call this%number_seas(number_of_seas = nseas, silent=.true.)
+        if (nseas > 1) then
+          write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
+          this%lakes_removed = 'no'
+        end if
       end if
     end if
-
-    write(output_unit,'(a)') "Done"
 
   end subroutine topography_fill_fraction
 
