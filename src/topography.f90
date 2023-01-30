@@ -458,7 +458,7 @@ contains
       end where
 
       if (this%lakes_removed == 'yes') then
-        ! We might have created new lakes, so rerun deseas
+        ! We might have created new lakes, so update the corresponding attribute
         this%lakes_removed = 'no'
       end if
     end if
