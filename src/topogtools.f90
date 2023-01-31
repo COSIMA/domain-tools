@@ -116,10 +116,10 @@ program topogtools
   case('fill_fraction')
     call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_fill_fraction, version_text)
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --potholes T --coastal-cells F', &
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --potholes F --coastal-cells F', &
       help_fix_nonadvective, version_text)
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --potholes T --coastal-cells F', &
+    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --potholes F --coastal-cells F', &
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
