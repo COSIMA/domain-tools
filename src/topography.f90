@@ -514,7 +514,7 @@ contains
     real(real32), allocatable :: depth_halo(:,:)
     integer(int32), allocatable :: num_levels(:,:)
     real(real32), allocatable :: zw(:), zeta(:)
-    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, counter
+    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, coastal_counter, potholes_counter
     integer(int32) :: ncid, vid
     integer(int32) :: dids(2)
     logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
@@ -540,11 +540,15 @@ contains
 
     if (fix) then
       passes = 20
+      write(output_unit,'(a)') "Fixing non-advective cells"
     else
+      write(output_unit,'(a)') "Checking for non-advective cells"
       passes = 1
     end if
     do its = 1, passes
-      counter = 0
+      if (fix) write(output_unit,'(a,i0)') " Pass # ", its
+      coastal_counter = 0
+      potholes_counter = 0
       num_levels = 0
 
       depth_halo = 0
@@ -566,6 +570,10 @@ contains
       end do
 
       if (coastal) then
+        if (.not. fix) then
+          write(output_unit,'(a)') "                 Coastal cells"
+          write(output_unit,'(a)') "          i           j       Depth"
+        end if
         do j = 2, this%nyt - 1
           do i = 1, this%nxt
             if (depth_halo(i, j) > 0.5) then
@@ -578,18 +586,23 @@ contains
                   depth_halo(i, j) = 0.0
                   this%frac(i, j) = 0.0
                   num_levels(i, j) = 0
+                else
+                  write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
                 end if
-                counter = counter + 1
-                write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
+                coastal_counter = coastal_counter + 1
               end if
             end if
           end do
         end do
 
-        write(output_unit,*) '1', counter
+        write(output_unit,'(a,i0,a)') '  Found ', coastal_counter, ' non-advective coastal cells'
       end if
 
       if (potholes) then
+        if (.not. fix) then
+          write(output_unit,'(a)') "                        Potholes"
+          write(output_unit,'(a)') "          i           j         Level    Max. halo level"
+        end if
         do j = 2, this%nyt
           jm = j - 1
           jp = j + 1
@@ -609,18 +622,18 @@ contains
                   num_levels(i, j) = kmu_max
                   depth_halo(i, j) = zw(kmu_max)
                 else
-                  write(output_unit,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+                  write(output_unit,*) i, j, num_levels(i, j), kmu_max
                 end if
-                counter = counter + 1
+                potholes_counter = potholes_counter + 1
               end if
             end if
           end do
         end do
-        write(output_unit,*) counter
+        write(output_unit,'(a,i0,a)') '  Found ', potholes_counter, ' non-advective potholes'
       end if
-      if (counter > 0 .and. fix) changes_made = .true.
+      if ((coastal_counter > 0 .or. potholes_counter > 0) .and. fix) changes_made = .true.
       this%depth = depth_halo(1:this%nxt, 1:this%nyt)
-      if (counter == 0 .and. fix) exit
+      if (coastal_counter == 0 .and. potholes_counter == 0 .and. fix) exit
     end do
 
     if (fix .and. (coastal .or. potholes)) then
