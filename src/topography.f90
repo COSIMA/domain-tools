@@ -223,11 +223,12 @@ contains
   subroutine topography_deseas(this)
     class(topography_t), intent(inout) :: this
 
-    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock, counter2
+    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock
     integer(int32) :: im, ip, jm, jp, land
 
     integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
 
+    integer(int16) :: new_sea
     integer(int16), allocatable :: sea(:,:)
 
     logical :: choke_west, choke_east, choke_north, choke_south
@@ -247,36 +248,32 @@ contains
 
     do its = 1, 150   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
       counter = 0
-      sea_num = 1
+      sea_num = 0
 
       ! Get number of seas
       do j = 2, this%nyt - 1
         i = 1
-        jm = j - 1
-        jp = j + 1
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i, j) >= sea_num) then
-            sea(i, j) = sea_num
+          if (sea(i, j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(this%nxt, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+            sea(i, j) = sea_num
           end if
         end if
 
         do i = 2, this%nxt - 1
-          im = i - 1
-          ip = i + 1
           if (sea(i, j) < land  .and. sea(i, j) > 0) then
-            if (sea(i, j) >= sea_num) then
-              sea(i, j) = sea_num
+            if (sea(i, j) > sea_num) then
               sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j), sea(i, j+1)), sea_num)
+              sea(i, j) = sea_num
             end if
           end if
         end do
 
         i = this%nxt
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i, j) >= sea_num) then
-            sea(i, j) = sea_num
+          if (sea(i, j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(1, j), sea(i, j+1)), sea_num)
+            sea(i, j) = sea_num
           end if
         end if
       end do
@@ -284,9 +281,9 @@ contains
       j = this%nyt
       do i = 2, this%nxt - 1
         if (sea(i, j) < land  .and. sea(i, j) > 0) then
-          if (sea(i,j) >= sea_num) then
-            sea(i,j) = sea_num
+          if (sea(i,j) > sea_num) then
             sea_num = max(min(sea_num+1, sea(i-1, j), sea(i, j-1), sea(i+1, j)), sea_num)
+            sea(i,j) = sea_num
           end if
         end if
       end do
@@ -308,23 +305,22 @@ contains
           im = i - 1
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
-            if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
-              sea(i, j) = land
-            else
-              !get chokes
-              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
-              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
-              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
-              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
-                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            !get chokes
+            choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+            choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+            choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+            choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+            new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+              mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            if (sea(i, j) /= new_sea) then
+              sea(i, j) = new_sea
+              counter = counter + 1
             end if
-            counter = counter + 1
           end if
         end do
         i = this%nxt
-        im = 1
-        ip = i - 1
+        ip = 1
+        im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
           sea(i,j)=min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
@@ -346,23 +342,22 @@ contains
           im = i - 1
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
-            if (all([sea(im, j), sea(ip, j), sea(i, j), sea(i, jm), sea(i, jp)] == land)) then
-              sea(i, j) = land
-            else
-              !get chokes
-              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
-              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
-              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
-              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              sea(i, j) = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
-                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            !get chokes
+            choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+            choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+            choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+            choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+            new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
+              mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            if (sea(i, j) /= new_sea) then
+              sea(i, j) = new_sea
+              counter = counter + 1
             end if
-            counter = counter + 1
           end if
         end do
         i = this%nxt
-        im = 1
-        ip = i - 1
+        ip = 1
+        im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
           sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
