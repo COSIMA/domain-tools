@@ -28,6 +28,7 @@ module topography
     procedure :: copy => topography_copy
     generic   :: assignment(=) => copy
     procedure :: update_history => topography_update_history
+    procedure :: number_seas => topography_number_seas
     procedure :: deseas => topography_deseas
     procedure :: fill_fraction => topography_fill_fraction
     procedure :: nonadvective => topography_nonadvective
@@ -220,23 +221,34 @@ contains
   end subroutine topography_update_history
 
   !-------------------------------------------------------------------------
-  subroutine topography_deseas(this)
-    class(topography_t), intent(inout) :: this
+  subroutine topography_number_seas(this, sea_number, number_of_seas, silent)
+    class(topography_t), intent(in) :: this
+    integer(int16), intent(out), target, optional :: sea_number(:,:)
+    integer(int32), intent(out), optional :: number_of_seas
+    logical, intent(in), optional :: silent
 
-    integer(int32) :: i, j, counter, its, its1, its2, sea_num, iblock, jblock
+    integer(int32) :: i, j, counter, its, its1, its2, sea_num
     integer(int32) :: im, ip, jm, jp, land
 
-    integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
-
     integer(int16) :: new_sea
-    integer(int16), allocatable :: sea(:,:)
+    integer(int16), pointer :: sea(:,:)
 
-    logical :: choke_west, choke_east, choke_north, choke_south
+    logical :: silent_, choke_west, choke_east, choke_north, choke_south
 
-    allocate(sea(this%nxt, this%nyt))
+    integer(int16), parameter :: MAX_ITER = 150
+
+    if (present(sea_number)) then
+      sea => sea_number
+    else
+      allocate(sea(this%nxt, this%nyt))
+    end if
+    if (present(silent)) then
+      silent_ = silent
+    else
+      silent_ = .false.
+    end if
 
     ! Do
-    write(output_unit,'(a)') "Removing seas"
     land = this%nxt + this%nyt + 1
     sea = land
     do j = 1, this%nyt
@@ -246,7 +258,9 @@ contains
       if (all(this%depth(:, j) > 0.0)) sea(:, j) = 0  ! Southern Ocean all water across
     end do
 
-    do its = 1, 150   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
+    if (.not. silent_) write(output_unit,'(a)') "       # Iter   # Changes      # Seas"
+
+    do its = 1, MAX_ITER   ! Only need high number after massive editing session with fjords. Normally 10 or so sweeps works.
       counter = 0
       sea_num = 0
 
@@ -363,24 +377,40 @@ contains
           counter = counter + 1
         end if
       end do
-      write(output_unit,*) counter, sea_num
+
+      if (.not. silent_) write(output_unit,*) its, counter, sea_num + 1
 
       ! If we only have one sea or no changes are made we are finished.
-      if (counter == 0 .or. sea_num == 1) exit
+      if (counter == 0 .or. sea_num + 1 == 1) exit
+      if (its == MAX_ITER) then
+        write(output_unit, '(a)') "WARNING: could not number all the seas. Algorithm reached maximum number of iterations."
+      end if
     end do
 
-    write(output_unit,'(a)') "Done"
+    if (present(sea_number)) then
+      nullify(sea)
+    else
+      deallocate(sea)
+    end if
 
-    ! Write out new topography
-    do j = 1, this%nyt
-      do i = 1, this%nxt
-        if (sea(i, j) > 0) then
-          this%depth(i, j) = MISSING_VALUE
-          this%frac(i, j) = MISSING_VALUE
-        end if
-      end do
-    end do
-    this%lakes_removed = "yes"
+    if (present(number_of_seas)) then
+      number_of_seas = sea_num + 1
+    end if
+
+  end subroutine topography_number_seas
+
+  !-------------------------------------------------------------------------
+  subroutine topography_deseas(this)
+    class(topography_t), intent(inout) :: this
+
+    integer(int32) :: ncid, sea_id, dids(2)  ! NetCDF ids
+    integer(int16), allocatable :: sea(:,:)
+
+    allocate(sea(this%nxt, this%nyt))
+
+    write(output_unit,'(a)') "Numbering seas"
+
+    call this%number_seas(sea_number=sea)
 
     call handle_error(nf90_create(trim('sea_num.nc'), ior(nf90_netcdf4, nf90_clobber), ncid))
     call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
@@ -390,6 +420,15 @@ contains
     call handle_error(nf90_enddef(ncid))
     call handle_error(nf90_put_var(ncid, sea_id, sea))
     call handle_error(nf90_close(ncid))
+
+    write(output_unit,'(a)') "Removing seas"
+    where(sea > 0)
+      this%depth = MISSING_VALUE
+      this%frac = MISSING_VALUE
+    end where
+    this%lakes_removed = "yes"
+
+    deallocate(sea)
 
   end subroutine topography_deseas
 
@@ -444,6 +483,8 @@ contains
     class(topography_t), intent(inout) :: this
     real(real32), intent(in) :: sea_area_fraction
 
+    integer(int32) :: nseas
+
     write(output_unit,'(a,f7.2)') "Filling cells that have a sea area fraction smaller than ", sea_area_fraction
 
     if (any(this%frac < sea_area_fraction)) then
@@ -453,12 +494,14 @@ contains
       end where
 
       if (this%lakes_removed == 'yes') then
-        ! We might have created new lakes, so update the corresponding attribute
-        this%lakes_removed = 'no'
+        ! Check if new seas have been created
+        call this%number_seas(number_of_seas = nseas, silent=.true.)
+        if (nseas > 1) then
+          write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
+          this%lakes_removed = 'no'
+        end if
       end if
     end if
-
-    write(output_unit,'(a)') "Done"
 
   end subroutine topography_fill_fraction
 
@@ -471,13 +514,14 @@ contains
     real(real32), allocatable :: depth_halo(:,:)
     integer(int32), allocatable :: num_levels(:,:)
     real(real32), allocatable :: zw(:), zeta(:)
-    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, counter
+    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, coastal_counter, potholes_counter
     integer(int32) :: ncid, vid
     integer(int32) :: dids(2)
     logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
     logical :: changes_made = .false.
     integer(int32) :: kse, ksw, kne, knw, kmu_max
     integer(int32) :: im, ip, jm, jp
+    integer(int32) :: nseas
 
     call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
     call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
@@ -496,11 +540,15 @@ contains
 
     if (fix) then
       passes = 20
+      write(output_unit,'(a)') "Fixing non-advective cells"
     else
+      write(output_unit,'(a)') "Checking for non-advective cells"
       passes = 1
     end if
     do its = 1, passes
-      counter = 0
+      if (fix) write(output_unit,'(a,i0)') " Pass # ", its
+      coastal_counter = 0
+      potholes_counter = 0
       num_levels = 0
 
       depth_halo = 0
@@ -522,6 +570,10 @@ contains
       end do
 
       if (coastal) then
+        if (.not. fix) then
+          write(output_unit,'(a)') "                 Coastal cells"
+          write(output_unit,'(a)') "          i           j       Depth"
+        end if
         do j = 2, this%nyt - 1
           do i = 1, this%nxt
             if (depth_halo(i, j) > 0.5) then
@@ -534,18 +586,23 @@ contains
                   depth_halo(i, j) = 0.0
                   this%frac(i, j) = 0.0
                   num_levels(i, j) = 0
+                else
+                  write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
                 end if
-                counter = counter + 1
-                write(output_unit,*) i, j, 0.0 ,'  ! nonadvective'
+                coastal_counter = coastal_counter + 1
               end if
             end if
           end do
         end do
 
-        write(output_unit,*) '1', counter
+        write(output_unit,'(a,i0,a)') '  Found ', coastal_counter, ' non-advective coastal cells'
       end if
 
       if (potholes) then
+        if (.not. fix) then
+          write(output_unit,'(a)') "                        Potholes"
+          write(output_unit,'(a)') "          i           j         Level    Max. halo level"
+        end if
         do j = 2, this%nyt
           jm = j - 1
           jp = j + 1
@@ -565,25 +622,29 @@ contains
                   num_levels(i, j) = kmu_max
                   depth_halo(i, j) = zw(kmu_max)
                 else
-                  write(output_unit,*) i, j, '   nonadvective, Deep', num_levels(i, j), kmu_max
+                  write(output_unit,*) i, j, num_levels(i, j), kmu_max
                 end if
-                counter = counter + 1
+                potholes_counter = potholes_counter + 1
               end if
             end if
           end do
         end do
-        write(output_unit,*) counter
+        write(output_unit,'(a,i0,a)') '  Found ', potholes_counter, ' non-advective potholes'
       end if
-      if (counter > 0 .and. fix) changes_made = .true.
+      if ((coastal_counter > 0 .or. potholes_counter > 0) .and. fix) changes_made = .true.
       this%depth = depth_halo(1:this%nxt, 1:this%nyt)
-      if (counter == 0 .and. fix) exit
+      if (coastal_counter == 0 .and. potholes_counter == 0 .and. fix) exit
     end do
 
     if (fix .and. (coastal .or. potholes)) then
       this%nonadvective_cells_removed = 'yes'
       if (changes_made .and. this%lakes_removed == 'yes') then
-        ! We might have created new lakes, so rerun deseas
-        call this%deseas()
+        ! Check if new lakes were created new lakes
+        call this%number_seas(number_of_seas = nseas, silent=.true.)
+        if (nseas > 1) then
+          write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
+          this%lakes_removed = 'no'
+        end if
       end if
     end if
 
