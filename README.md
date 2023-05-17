@@ -124,3 +124,49 @@ double-precision topography file.
 
 Options
   * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
+
+
+# Building and Installation
+
+## General Instructions
+
+### Prerequisites
+
+To compile these tools one needs:
+- Fortran compiler
+- netCDF-Fortran
+- CMake
+
+### Step-by-step instructions
+
+`domain-tools` uses CMake for building and installation. Therefore the procedure
+to build the sources and install the executables is fairly standard:
+```console
+git clone https://github.com/COSIMA/domain-tools.git
+cd domain-tools
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --install build --prefix=<directory where to install the tools>
+```
+
+## Gadi
+
+An installation of these tools is available on Gadi. To use it, you need to be a
+member of group `ik11` and load the corresponding module:
+
+```console
+module use /g/data/ik11/spack/modules
+module load domain-tools
+```
+
+If instead you wish to build and install the tools from the sources, you can
+follow a slighly modified version of above step-be-step instructions:
+```console
+module load intel-compiler netcdf
+export NetCDF_ROOT=$(nc-config --prefix)
+git clone https://github.com/COSIMA/domain-tools.git
+cd domain-tools
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DNetCDF_Fortran_LIBRARY=$NetCDF_ROOT/lib/Intel/libnetcdff.so -DNetCDF_C_LIBRARY=$NetCDF_ROOT/lib/libnetcdf.so -DNetCDF_Fortran_INCLUDE_DIRS=$NetCDF_ROOT/include/Intel
+cmake --build build
+cmake --install build --prefix=<directory where to install the tools>
+```
