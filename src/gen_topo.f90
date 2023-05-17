@@ -1,3 +1,9 @@
+! Copyright 2020-2023 Micael Oliveira, Andrew Kiss, Russ Fiedler
+!
+! This Source Code Form is subject to the terms of the Mozilla Public
+! License, v. 2.0. If a copy of the MPL was not distributed with this
+! file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 module gen_topo_m
   !
   ! Create a file with all the wet points that we wish to map to.
