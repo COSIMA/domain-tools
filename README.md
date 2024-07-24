@@ -6,7 +6,7 @@ Code and tools to edit and manipulate ocean model grids and topographies.
 
 Below is a list of included tools and short documentation for each.
 
-**Note:** in all cases `vgrid` is assumed to be a MOM5 vgrid (with $2n+1$ values for an $n$-level model). Using a MOM6 `vgrid` (with $n+1$ values) will produce incorrect results.
+**Note:** in all cases `<vgrid>` is assumed to be a MOM5 vertical grid file (with $2n+1$ values for an $n$-level model). Using a MOM6 `<vgrid>` file (with $n+1$ values) will produce incorrect results.
 
 ## topogtools (Russ' Fortran tools)
 
