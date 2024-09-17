@@ -2,6 +2,7 @@ module topography
   use iso_fortran_env
   use netcdf
   use utils
+  use vgrid
   implicit none
 
   type topography_t
@@ -433,9 +434,9 @@ contains
   end subroutine topography_deseas
 
   !-------------------------------------------------------------------------
-  subroutine topography_min_max_depth(this, vgrid, level)
+  subroutine topography_min_max_depth(this, vgrid_file, level)
     class(topography_t), intent(inout) :: this
-    character(len=*), intent(in) :: vgrid
+    character(len=*), intent(in) :: vgrid_file
     integer, intent(in) :: level
 
     integer(int32) :: i,j
@@ -445,22 +446,13 @@ contains
     integer(int32) :: dids_lev(1)           ! NetCDF ids
     integer(int32) :: zlen                   ! length of zeta array
 
-    real(real64)  ::  zeta
-    real(real64), allocatable :: zeta_arr(:)
+    type(vgrid_t) :: vgrid
 
     this%min_level = level
 
-    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid_lev))
-    call handle_error(nf90_inq_varid(ncid_lev, 'zeta', lev_id))
-    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[2*this%min_level+1]))
-    this%min_depth = zeta
-
-    call handle_error(nf90_inquire_variable(ncid_lev, lev_id, dimids=dids_lev))
-    call handle_error(nf90_inquire_dimension(ncid_lev, dids_lev(1), len=zlen))
-    call handle_error(nf90_get_var(ncid_lev, lev_id, zeta, start=[zlen]))
-    this%max_depth = zeta
-
-    call handle_error(nf90_close(ncid_lev))
+    vgrid = vgrid_t(vgrid_file)
+    this%min_depth = vgrid%zeta(this%min_level)
+    this%max_depth = vgrid%zeta(vgrid%nlevels)
 
     write(output_unit,'(a,f7.2,a)') 'Setting minimum depth to ', this%min_depth, ' m'
     write(output_unit,'(a,f7.2,a)') 'Setting maximum depth to ', this%max_depth, ' m'
@@ -506,15 +498,16 @@ contains
   end subroutine topography_fill_fraction
 
   !-------------------------------------------------------------------------
-  subroutine topography_nonadvective(this, vgrid, potholes, coastal, fix)
+  subroutine topography_nonadvective(this, vgrid_file, potholes, coastal, fix)
     class(topography_t), intent(inout) :: this
-    character(len=*), intent(in) :: vgrid
+    character(len=*), intent(in) :: vgrid_file
     logical, intent(in) :: potholes, coastal, fix
 
     real(real32), allocatable :: depth_halo(:,:)
+    type(vgrid_t) :: vgrid
     integer(int32), allocatable :: num_levels(:,:)
-    real(real32), allocatable :: zw(:), zeta(:)
-    integer(int32) :: passes, i, j, k, ni, nj, nzeta, nz, its, coastal_counter, potholes_counter
+    real(real32), allocatable :: zw(:)
+    integer(int32) :: passes, i, j, k, ni, nj, its, coastal_counter, potholes_counter
     integer(int32) :: ncid, vid
     integer(int32) :: dids(2)
     logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
@@ -523,16 +516,10 @@ contains
     integer(int32) :: im, ip, jm, jp
     integer(int32) :: nseas
 
-    call handle_error(nf90_open(trim(vgrid), nf90_nowrite, ncid))
-    call handle_error(nf90_inq_varid(ncid, 'zeta', vid))
-    call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
-    call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
-    nz = nzeta/2
-    write(output_unit,*) 'Zeta dimensions', nzeta, nz
-    allocate(zeta(nzeta), zw(0:nz))
-    call handle_error(nf90_get_var(ncid, vid, zeta))
-    call handle_error(nf90_close(ncid))
-    zw(:) = zeta(1:nzeta:2)
+    vgrid = vgrid_t(vgrid_file)
+    write(output_unit,*) 'Zeta dimensions', 2*vgrid%nlevels + 1, vgrid%nlevels
+    allocate(zw(0:vgrid%nlevels))
+    zw = real(vgrid%zeta)
 
     write(output_unit,*) 'depth dimensions', this%nxt, this%nyt
     allocate(depth_halo(0:this%nxt+1, this%nyt+1))
@@ -559,7 +546,7 @@ contains
       do j = 1, this%nyt + 1
         do i = 0, this%nxt + 1
           if (depth_halo(i, j) > 0.0) then
-            kloop: do k = 2, nz
+            kloop: do k = 2, vgrid%nlevels
               if (zw(k) >= depth_halo(i, j)) then
                 num_levels(i, j) = k
                 exit kloop
