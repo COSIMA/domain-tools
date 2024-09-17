@@ -6,7 +6,10 @@ Code and tools to edit and manipulate ocean model grids and topographies.
 
 Below is a list of included tools and short documentation for each.
 
-**Note:** in all cases `<vgrid>` is assumed to be a MOM5 vertical grid file (with $2n+1$ values for an $n$-level model). Using a MOM6 `<vgrid>` file (with $n+1$ values) will produce incorrect results.
+**Note:** these tools support two types of vertical grids: MOM5 grids (with
+$2n+1$ values for an $n$-level model) and MOM6 grids (with $n+1$ values). It is
+important to select the correct type or the tools will produce incorrect
+results.
 
 ## topogtools (Russ' Fortran tools)
 
@@ -51,7 +54,8 @@ Remove enclosed seas from <input_file> and writes the result to <output_file>.
 
 ```
 usage: topogtools min_max_depth --input <input_file> --output <output_file>
-                                --level <level> [--vgrid <vgrid>]
+                                --level <level>
+                                [--vgrid <vgrid> --vgrid_type <type>]
 ```
 
 Set minimum depth to the depth at a specified level and set maximum depth to
@@ -59,7 +63,8 @@ deepest in `<vgrid>`. `<level>` is the minimum number of depth levels (e.g. 4).
 Can produce non-advective cells.
 
 Options
-  * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid_type <type>`  can be mom5 or mom6 (default 'mom5')
 
 ### fill_fraction
 
@@ -75,7 +80,8 @@ to zero. Can produce non-advective cells and/or new seas.
 
 ```
 usage: topogtools check_nonadvective --input <input_file>
-                                     [--vgrid <vgrid> --potholes --coastal-cells]
+                                     [--vgrid <vgrid> --vgrid_type <type>
+                                      --potholes --coastal-cells]
 ```
 
 Check for non-advective cells. There are two types of checks available: potholes
@@ -83,15 +89,17 @@ and non-advective coastal cells. Checking for non-advective coastal cells should
 only be needed when using a B-grid.
 
 Options
-  * `--vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
-  * `--potholes`      check for potholes
-  * `--coastal-cells` check for non-advective coastal cells
+  * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid_type <type>`  can be mom5 or mom6 (default 'mom5')
+  * `--potholes`           check for potholes
+  * `--coastal-cells`      check for non-advective coastal cells
 
 ### fix_nonadvective
 
 ```
 usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
-                                   [--vgrid <vgrid> --potholes --coastal-cells]
+                                   [--vgrid <vgrid>  --vgrid_type <type>
+                                    --potholes --coastal-cells]
 ```
 
 Fix non-advective cells. There are two types of fixes available: potholes and
@@ -99,9 +107,10 @@ non-advective coastal cells. Fixes to non-advective coastal cells should only be
 needed when using a B-grid.
 
 Options
-  * `--vgrid <vgrid>` vertical grid (default 'ocean_vgrid.nc')
-  * `--potholes`      fix potholes
-  * `--coastal-cells` fix non-advective coastal cells
+  * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
+  * `--vgrid_type <type>`  can be mom5 or mom6 (default 'mom5')
+  * `--potholes`           fix potholes
+  * `--coastal-cells`      fix non-advective coastal cells
 
 ### mask
 
