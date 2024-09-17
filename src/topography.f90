@@ -434,9 +434,9 @@ contains
   end subroutine topography_deseas
 
   !-------------------------------------------------------------------------
-  subroutine topography_min_max_depth(this, vgrid_file, level)
+  subroutine topography_min_max_depth(this, vgrid_file, vgrid_type, level)
     class(topography_t), intent(inout) :: this
-    character(len=*), intent(in) :: vgrid_file
+    character(len=*), intent(in) :: vgrid_file, vgrid_type
     integer, intent(in) :: level
 
     integer(int32) :: i,j
@@ -450,7 +450,7 @@ contains
 
     this%min_level = level
 
-    vgrid = vgrid_t(vgrid_file)
+    vgrid = vgrid_t(vgrid_file, vgrid_type)
     this%min_depth = vgrid%zeta(this%min_level)
     this%max_depth = vgrid%zeta(vgrid%nlevels)
 
@@ -498,9 +498,9 @@ contains
   end subroutine topography_fill_fraction
 
   !-------------------------------------------------------------------------
-  subroutine topography_nonadvective(this, vgrid_file, potholes, coastal, fix)
+  subroutine topography_nonadvective(this, vgrid_file, vgrid_type, potholes, coastal, fix)
     class(topography_t), intent(inout) :: this
-    character(len=*), intent(in) :: vgrid_file
+    character(len=*), intent(in) :: vgrid_file, vgrid_type
     logical, intent(in) :: potholes, coastal, fix
 
     real(real32), allocatable :: depth_halo(:,:)
@@ -516,7 +516,7 @@ contains
     integer(int32) :: im, ip, jm, jp
     integer(int32) :: nseas
 
-    vgrid = vgrid_t(vgrid_file)
+    vgrid = vgrid_t(vgrid_file, vgrid_type)
     write(output_unit,*) 'Zeta dimensions', 2*vgrid%nlevels + 1, vgrid%nlevels
     allocate(zw(0:vgrid%nlevels))
     zw = real(vgrid%zeta)

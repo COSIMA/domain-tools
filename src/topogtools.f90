@@ -11,7 +11,7 @@ program topogtools
   character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:)
   character(len=:), allocatable :: help_fill_fraction(:), help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
   character(len=80) :: version_text(1)
-  character(len=:), allocatable :: file_in, file_out, hgrid, vgrid, grid_type
+  character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
   type(topography_t) :: topog
   real(real32) :: sea_area_fraction
   integer :: ii
@@ -55,14 +55,16 @@ program topogtools
     '']
   help_min_max_depth = [character(len=80) :: &
     'usage: topogtools min_max_depth --input <input_file> --output <output_file>     ', &
-    '                                --level <level> [--vgrid <vgrid>]               ', &
+    '                                --level <level>                                 ', &
+    '                                [--vgrid <vgrid> --vgrid_type <type>]           ', &
     '                                                                                ', &
     'Set minimum depth to the depth at a specified level and set maximum depth to    ', &
     'deepest in <vgrid>. <level> is the minimum number of depth levels (e.g. 4).     ', &
     'Can produce non-advective cells.                                                ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
+    '    --vgrid <vgrid>      vertical grid (default ''ocean_vgrid.nc'')               ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
     '']
   help_fill_fraction = [character(len=80) :: &
     'usage: topogtools fill_fraction --input <input_file> --output <output_file>     ', &
@@ -73,7 +75,8 @@ program topogtools
     '']
   help_fix_nonadvective = [character(len=80) :: &
     'usage: topogtools fix_nonadvective --input <input_file> --output <output_file>  ', &
-    '                                   [--vgrid <vgrid> --potholes --coastal_cells] ', &
+    '                                   [--vgrid <vgrid> --vgrid_type <type>         ', &
+    '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Fix non-advective cells. There are two types of fixes available: potholes and   ', &
     'non-advective coastal cells. Fixes to non-advective coastal cells should only be', &
@@ -81,12 +84,14 @@ program topogtools
     '                                                                                ', &
     'Options                                                                         ', &
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
     '    --potholes       fix potholes                                               ', &
     '    --coastal-cells  fix non-advective coastal cells                            ', &
     '']
   help_check_nonadvective = [character(len=80) :: &
     'usage: topogtools check_nonadvective --input <input_file>                       ', &
-    '                                   [--vgrid <vgrid> --potholes --coastal_cells] ', &
+    '                                   [--vgrid <vgrid> --vgrid_type <type>         ', &
+    '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Check for non-advective cells. There are two types of checks available: potholes', &
     'and non-advective coastal cells. Checking for non-advective coastal cells should', &
@@ -94,6 +99,7 @@ program topogtools
     '                                                                                ', &
     'Options                                                                         ', &
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
     '    --potholes       check for potholes                                         ', &
     '    --coastal-cells  check for non-advective coastal cells                      ', &
     '']
@@ -112,14 +118,15 @@ program topogtools
   case ('deseas')
     call set_args('--input:i "unset" --output:o "unset"', help_deseas, version_text)
   case ('min_max_depth')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --level 0', help_min_max_depth, version_text)
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --level 0', &
+      help_min_max_depth, version_text)
   case('fill_fraction')
     call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_fill_fraction, version_text)
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --potholes F --coastal-cells F', &
-      help_fix_nonadvective, version_text)
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F &
+      &--coastal-cells F', help_fix_nonadvective, version_text)
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --potholes F --coastal-cells F', &
+    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F --coastal-cells F', &
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
@@ -174,7 +181,7 @@ program topogtools
 
   case ('min_max_depth')
     topog = topography_t(file_in)
-    call topog%min_max_depth(vgrid, iget('level'))
+    call topog%min_max_depth(vgrid, sget('vgrid_type'), iget('level'))
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
@@ -191,13 +198,13 @@ program topogtools
 
   case ('fix_nonadvective')
     topog = topography_t(file_in)
-    call topog%nonadvective(vgrid, lget('potholes'), lget('coastal-cells'), fix=.true.)
+    call topog%nonadvective(vgrid, sget('vgrid_type'), lget('potholes'), lget('coastal-cells'), fix=.true.)
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('check_nonadvective')
     topog = topography_t(file_in)
-    call topog%nonadvective(vgrid, lget('potholes'), lget('coastal-cells'), fix=.false.)
+    call topog%nonadvective(vgrid, sget('vgrid_type'), lget('potholes'), lget('coastal-cells'), fix=.false.)
 
   case ('mask')
     topog = topography_t(file_in)

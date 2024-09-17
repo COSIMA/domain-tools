@@ -18,12 +18,12 @@ program float_vgrid
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
     '']
 
-  call set_args('--vgrid "ocean_vgrid.nc"', help_text)
+  call set_args('--vgrid "ocean_vgrid.nc" --vgrid_type "mom5"', help_text)
 
   file = sget('vgrid')
   call check_file_exist(file)
 
-  vgrid = vgrid_t(file)
+  vgrid = vgrid_t(file, sget('vgrid_type'))
   call vgrid%float()
   call vgrid%update_history(get_mycommand())
   call vgrid%write(file)
