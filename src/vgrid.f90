@@ -74,6 +74,10 @@ contains
     ! Handle the different types of grids
     select case (type)
     case ("mom5")
+      if (mod(zeta_len, 2) == 0) then
+        write(error_unit,'(a)') "ERROR: MOM5 vertical grid has an even number of points, which should never happen."
+        error stop
+      end if
       vgrid%nlevels = zeta_len/2
       allocate(vgrid%zeta_super(zeta_len))
       allocate(vgrid%zeta(0:vgrid%nlevels))
