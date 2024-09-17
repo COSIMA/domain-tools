@@ -11,6 +11,7 @@ module vgrid
     ! Vertical grid variable
     integer :: nlevels = 0
     real(real64), allocatable :: zeta(:)
+    real(real64), allocatable :: zeta_super(:)
     character(len=:), allocatable :: author
     ! Global attributes
     character(len=:), allocatable :: original_file
@@ -33,7 +34,7 @@ contains
   type(vgrid_t) function vgrid_constructor(filename) result(vgrid)
     character(len=*), intent(in) :: filename
 
-    integer(int32) :: ncid, zeta_id, did(1), author_len, history_len ! NetCDF ids
+    integer(int32) :: ncid, zeta_id, did(1), zeta_len, author_len, history_len ! NetCDF ids and dims
 
     write(output_unit,'(3a)') "Reading vgrid from file '", trim(filename), "'"
 
@@ -44,12 +45,15 @@ contains
 
     ! Get dimension
     call handle_error(nf90_inq_dimid(ncid, 'nzv', did(1)))
-    call handle_error(nf90_inquire_dimension(ncid, did(1), len=vgrid%nlevels))
+    call handle_error(nf90_inquire_dimension(ncid, did(1), len=zeta_len))
+    vgrid%nlevels = zeta_len/2
 
     ! Get zeta
-    allocate(vgrid%zeta(vgrid%nlevels))
+    allocate(vgrid%zeta_super(zeta_len))
+    allocate(vgrid%zeta(0:vgrid%nlevels))
     call handle_error(nf90_inq_varid(ncid, 'zeta', zeta_id))
-    call handle_error(nf90_get_var(ncid, zeta_id, vgrid%zeta))
+    call handle_error(nf90_get_var(ncid, zeta_id, vgrid%zeta_super))
+    vgrid%zeta = vgrid%zeta_super(1:zeta_len:2)
     if (nf90_inquire_attribute(ncid, zeta_id, 'author', len=author_len) == nf90_noerr) then
       allocate(character(len=author_len) :: vgrid%author)
       call handle_error(nf90_get_att(ncid, zeta_id, 'author', vgrid%author))
@@ -76,6 +80,7 @@ contains
 
     ! Zeta variable and attributes
     allocate(vgrid_out%zeta, source=vgrid_in%zeta)
+    allocate(vgrid_out%zeta_super, source=vgrid_in%zeta_super)
     if (allocated(vgrid_in%author)) then
       vgrid_out%author = vgrid_in%author
     end if
@@ -101,7 +106,7 @@ contains
     call handle_error(nf90_create(trim(filename), ior(nf90_netcdf4, nf90_clobber), ncid))
 
     ! Write dimension
-    call handle_error(nf90_def_dim(ncid, 'nzv', this%nlevels, did(1)))
+    call handle_error(nf90_def_dim(ncid, 'nzv', 2*this%nlevels+1, did(1)))
 
     ! Write zeta
     call handle_error(nf90_def_var(ncid, 'zeta', nf90_double, did, zeta_id))
@@ -109,7 +114,7 @@ contains
     call handle_error(nf90_put_att(ncid, zeta_id, 'standard_name', 'vertical_grid_vertex'))
     call handle_error(nf90_put_att(ncid, zeta_id, 'long_name', 'vgrid'))
     call handle_error(nf90_put_att(ncid, zeta_id, 'author', trim(this%author)))
-    call handle_error(nf90_put_var(ncid, zeta_id, this%zeta))
+    call handle_error(nf90_put_var(ncid, zeta_id, this%zeta_super))
 
     ! Write global attributes
     call handle_error(nf90_put_att(ncid, nf90_global, 'original_file', trim(this%original_file)))
@@ -146,9 +151,15 @@ contains
 
     real(real32), allocatable :: zeta_float(:)
 
-    allocate(zeta_float(this%nlevels))
+    allocate(zeta_float(2*this%nlevels+1))
+    zeta_float = this%zeta_super
+    this%zeta_super = zeta_float
+    deallocate(zeta_float)
+
+    allocate(zeta_float(0:this%nlevels))
     zeta_float = this%zeta
     this%zeta = zeta_float
+    deallocate(zeta_float)
 
   end subroutine vgrid_float
 
