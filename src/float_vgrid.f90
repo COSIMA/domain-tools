@@ -1,16 +1,11 @@
 program float_vgrid
   ! Zeta is double precision. Convert to  single and rewrite. This stops small floating point errors.
-  use netcdf
-  use, intrinsic :: iso_fortran_env
-  use utils
   use M_CLI2
+  use vgrid
+  use utils
   implicit none
 
-  real(real32), allocatable :: zeta_float(:)
-  real(real64), allocatable :: zeta_dp(:)
-  integer :: ierr, nzeta
-  integer :: ncid, vid
-  integer :: dids(1)
+  type(vgrid_t) :: vgrid
   character(len=:), allocatable :: help_text(:), file
 
   help_text = [character(len=80) :: &
@@ -25,15 +20,12 @@ program float_vgrid
 
   call set_args('--vgrid "ocean_vgrid.nc"', help_text)
 
-  call handle_error(nf90_open(sget('vgrid'), nf90_write,ncid))
-  call handle_error(nf90_inq_varid(ncid,'zeta', vid))
-  call handle_error(nf90_inquire_variable(ncid, vid, dimids=dids))
-  call handle_error(nf90_inquire_dimension(ncid, dids(1), len=nzeta))
-  allocate(zeta_dp(nzeta), zeta_float(nzeta))
-  call handle_error(nf90_get_var(ncid, vid, zeta_dp))
-  zeta_float = zeta_dp
-  zeta_dp = zeta_float
-  call handle_error(nf90_put_var(ncid, vid, zeta_dp))
-  call handle_error(nf90_close(ncid))
+  file = sget('vgrid')
+  call check_file_exist(file)
+
+  vgrid = vgrid_t(file)
+  call vgrid%float()
+  call vgrid%update_history(get_mycommand())
+  call vgrid%write(file)
 
 end program float_vgrid
