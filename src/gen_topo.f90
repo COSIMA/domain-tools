@@ -26,7 +26,7 @@ contains
     logical, intent(in) :: istripolar
     real(real32), intent(in) :: offset
 
-    integer(int32) :: i, j, k
+    integer(int32) :: i, j
     integer(int32) :: nx, ny                  ! Size of model grid
     integer(int32) :: nxp, nyp                ! Size of model supergrid
     integer(int32) :: nxt, nyt                ! Size of model T grid
@@ -40,8 +40,8 @@ contains
     integer(int32) :: dids(2)           ! NetCDF ids
     integer(int32) :: dids_topo(2)           ! NetCDF ids
 
-    real(real64), allocatable   :: wrk(:,:), wrk_super(:,:)
-    real(real64), allocatable   :: x_c(:,:), y_c(:,:), x_t(:,:), y_t(:,:), area(:,:)
+    real(real64), allocatable   :: wrk_super(:,:)
+    real(real64), allocatable   :: x_c(:,:), y_c(:,:), x_t(:,:), y_t(:,:)
     real(real64), allocatable   :: xtopo(:), ytopo(:), weight(:), x_rot(:)
     real(real32), allocatable   :: topo_in(:,:), topo_out(:,:), topo_all_out(:,:), frac(:,:)
     real(real32), allocatable   :: topo_med_out(:,:), topo_all_med_out(:,:)
@@ -50,7 +50,7 @@ contains
 
     integer(int32)      :: ishift
 
-    integer(int32)      :: x_cyc, j_lat
+    integer(int32)      :: j_lat
 
     integer(int32)      :: xlen, ylen
 
@@ -65,8 +65,7 @@ contains
     real(real64) :: xstart, ystart
     real(real64) :: xend, yend
 
-    real(real64) :: xt_start, xt_delta
-    real(real64) :: yt_start, yt_delta
+    real(real64) :: xt_delta, yt_delta
 
     !
     ! On mosaic "supergrid" we need to get every second point
@@ -338,7 +337,7 @@ contains
       real(real32), allocatable, intent(out) :: topo(:, :)
 
       integer(int32) :: icount, jcount
-      integer(int32) :: listart, liend, licount, licount1, licount2
+      integer(int32) :: listart, liend, licount1, licount2
       integer(int32) :: n
       integer(int16), allocatable :: itopo(:,:)
 
@@ -390,7 +389,8 @@ contains
       real(real64), intent(in)    :: lower, upper
       integer(int32), intent(out) :: index_lo, index_hi
 
-      integer(int32) :: itmp, imx, imn, its, itsmax = 20
+      integer(int32) :: imx, imn, its
+      integer(int32), parameter :: itsmax = 20
 
       imn = 1
       imx = size(vals)
@@ -462,7 +462,7 @@ contains
 
       logical, allocatable :: mask(:,:)
 
-      integer :: im, it, jm, jt, inext, jnext, itopo, jtopo
+      integer :: im, it, jm, jt
 
       ! tree stuff
       real(kdkind), allocatable :: possie(:,:)
@@ -471,7 +471,7 @@ contains
       real(kdkind)              :: t_source(3), xt, yt, rad2
       type(kdtree2), pointer    :: tree
       type(kdtree2_result), allocatable :: results(:)
-      real(int32), allocatable :: idx(:), jdx(:)
+      integer(int32), allocatable :: idx(:), jdx(:)
       real(real64), parameter :: DEG2RAD = asin(1.0_real64)/90.0_real64  ! PI/180
       integer(int32)           :: num_found, n, ngd, num_max
       real(real32), allocatable :: t_s(:), t_s_all(:)
