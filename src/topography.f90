@@ -133,7 +133,7 @@ contains
     class(topography_t), intent(in) :: this
     character(len=*), intent(in) :: filename
 
-    integer(int32) :: ncid, depth_id, frac_id, geolon_id, geolat_id, dids(2) ! NetCDF ids
+    integer(int32) :: ncid, depth_id, frac_id, dids(2) ! NetCDF ids
 
     write(output_unit,'(3a)') "Writing topography to file '", trim(filename), "'"
 
@@ -228,7 +228,7 @@ contains
     integer(int32), intent(out), optional :: number_of_seas
     logical, intent(in), optional :: silent
 
-    integer(int32) :: i, j, counter, its, its1, its2, sea_num
+    integer(int32) :: i, j, counter, its, sea_num
     integer(int32) :: im, ip, jm, jp, land
 
     integer(int16) :: new_sea
@@ -440,19 +440,13 @@ contains
     integer, intent(in) :: level
 
     integer(int32) :: i,j
-    integer(int32) :: im,ip,jm,jp
-
-    integer(int32) :: ncid_lev, lev_id           ! NetCDF ids
-    integer(int32) :: dids_lev(1)           ! NetCDF ids
-    integer(int32) :: zlen                   ! length of zeta array
-
     type(vgrid_t) :: vgrid
 
     this%min_level = level
 
     vgrid = vgrid_t(vgrid_file, vgrid_type)
-    this%min_depth = vgrid%zeta(this%min_level)
-    this%max_depth = vgrid%zeta(vgrid%nlevels)
+    this%min_depth = real(vgrid%zeta(this%min_level), real32)
+    this%max_depth = real(vgrid%zeta(vgrid%nlevels), real32)
 
     write(output_unit,'(a,f7.2,a)') 'Setting minimum depth to ', this%min_depth, ' m'
     write(output_unit,'(a,f7.2,a)') 'Setting maximum depth to ', this%max_depth, ' m'
@@ -507,9 +501,7 @@ contains
     type(vgrid_t) :: vgrid
     integer(int32), allocatable :: num_levels(:,:)
     real(real32), allocatable :: zw(:)
-    integer(int32) :: passes, i, j, k, ni, nj, its, coastal_counter, potholes_counter
-    integer(int32) :: ncid, vid
-    integer(int32) :: dids(2)
+    integer(int32) :: passes, i, j, k, its, coastal_counter, potholes_counter
     logical :: se, sw, ne, nw   ! .TRUE. if C-cell centre is shallower than T cell centre.
     logical :: changes_made = .false.
     integer(int32) :: kse, ksw, kne, knw, kmu_max
