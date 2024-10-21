@@ -45,10 +45,13 @@ Options
 ### deseas
 
 ```
-usage: topogtools deseas --input <input_file> --output <output_file>
+usage: topogtools deseas --input <input_file> --output <output_file> [--grid_type <type>]
 ```
 
 Remove enclosed seas from <input_file> and writes the result to <output_file>.
+
+Options
+  * `--grid_type <type>` Arakawa type of horizontal grid ('B' or 'C'; default is 'B')
 
 ### min_max_depth
 
@@ -70,18 +73,22 @@ Options
 
 ```
 usage: topogtools fill_fraction --input <input_file> --output <output_file>
-                                --fraction <frac>
+                                --fraction <frac> [--grid_type <type>]
 ```
 
 Cells with a fraction of sea area smaller than <frac> will have their depth set
 to zero. Can produce non-advective cells and/or new seas.
 
+Options
+  * `--grid_type <type>` Arakawa type of horizontal grid ('B' or 'C'; default is 'B')
+
 ### check_nonadvective
 
 ```
 usage: topogtools check_nonadvective --input <input_file>
-                                     [--vgrid <vgrid> --vgrid_type <type>
-                                      --potholes --coastal-cells]
+                                      [--grid_type <type>
+                                       --vgrid <vgrid> --vgrid_type <type>
+                                       --potholes --coastal-cells]
 ```
 
 Check for non-advective cells. There are two types of checks available: potholes
@@ -89,6 +96,7 @@ and non-advective coastal cells. Checking for non-advective coastal cells should
 only be needed when using a B-grid.
 
 Options
+  * `--grid_type <type>` Arakawa type of horizontal grid ('B' or 'C'; default is 'B')
   * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
   * `--vgrid_type <type>`  can be mom5 or mom6 (default 'mom5')
   * `--potholes`           check for potholes
@@ -98,7 +106,8 @@ Options
 
 ```
 usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
-                                   [--vgrid <vgrid>  --vgrid_type <type>
+                                   [--grid_type <type>
+                                    --vgrid <vgrid>  --vgrid_type <type>
                                     --potholes --coastal-cells]
 ```
 
@@ -107,6 +116,7 @@ non-advective coastal cells. Fixes to non-advective coastal cells should only be
 needed when using a B-grid.
 
 Options
+  * `--grid_type <type>` Arakawa type of horizontal grid ('B' or 'C'; default is 'B')
   * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
   * `--vgrid_type <type>`  can be mom5 or mom6 (default 'mom5')
   * `--potholes`           fix potholes
