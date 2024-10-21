@@ -138,6 +138,15 @@ Options
   * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
 
 
+## test/png2nc.py
+
+```
+usage: png2nc.py
+```
+
+Converts `test_topo.png` to `test_topo.nc` for use as a test input file for `topogtools deseas`.
+
+
 # Building and Installation
 
 ## General Instructions
