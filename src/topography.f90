@@ -11,7 +11,8 @@ module topography
     integer(int32) :: nyt = 0
     ! Depth variable and attributes
     real(real32), allocatable :: depth(:,:)
-    character(len=3) :: lakes_removed = "no "
+    character(len=1) :: grid_type = 'B'
+    character(len=3) :: lakes_removed = 'no '
     real(real32) :: min_depth = -1.0
     integer :: min_level = 0
     real(real32) :: max_depth = -1.0
@@ -44,10 +45,21 @@ module topography
 contains
 
   !-------------------------------------------------------------------------
-  type(topography_t) function topography_constructor(filename) result(topog)
+  type(topography_t) function topography_constructor(filename, grid_type) result(topog)
     character(len=*), intent(in) :: filename
+    character(len=1), intent(in), optional :: grid_type
 
     integer(int32) :: ncid, depth_id, frac_id, geolon_id, geolat_id, dids(2), history_len ! NetCDF ids
+
+    if (present(grid_type)) then
+      if ( grid_type == 'B' .or. grid_type == 'C' ) then
+        topog%grid_type = grid_type
+      else
+        call handle_error(nf90_einval, .true., "grid_type must be B or C")
+      end if
+    else
+      topog%grid_type = 'B'
+    end if
 
     write(output_unit,'(3a)') "Reading topography from file '", trim(filename), "'"
 
@@ -112,6 +124,7 @@ contains
     topog_out%min_level = topog_in%min_level
     topog_out%max_depth = topog_in%max_depth
     topog_out%nonadvective_cells_removed = topog_in%nonadvective_cells_removed
+    topog_out%grid_type = topog_in%grid_type
 
     ! Sea area fraction
     allocate(topog_out%frac, source=topog_in%frac)
@@ -150,6 +163,7 @@ contains
     call handle_error(nf90_def_var_fill(ncid, depth_id, 0, MISSING_VALUE))
     call handle_error(nf90_put_att(ncid, depth_id, 'long_name', 'depth'))
     call handle_error(nf90_put_att(ncid, depth_id, 'units', 'm'))
+    call handle_error(nf90_put_att(ncid, depth_id, 'grid_type', this%grid_type))
     call handle_error(nf90_put_att(ncid, depth_id, 'lakes_removed', this%lakes_removed))
     if (this%min_depth > 0.0) then
       call handle_error(nf90_put_att(ncid, depth_id, 'minimum_depth', this%min_depth))
@@ -320,13 +334,17 @@ contains
           im = i - 1
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
-            !get chokes
-            choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
-            choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
-            choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
-            choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-            new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
-              mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            if ( this%grid_type == 'C' ) then
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)]), land)
+            else
+              ! get chokes, assuming B-grid connectivity rules
+              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            end if
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
               counter = counter + 1
@@ -357,13 +375,17 @@ contains
           im = i - 1
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
-            !get chokes
-            choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
-            choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
-            choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
-            choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-            new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i,jp)], &
-              mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            if ( this%grid_type == 'C' ) then
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)]), land)
+            else
+              ! get chokes, assuming B-grid connectivity rules
+              choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
+              choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
+              choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
+              choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
+              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+            end if
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
               counter = counter + 1

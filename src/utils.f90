@@ -33,7 +33,7 @@ contains
     if (present(isfatal)) fatal = isfatal
     if (error_flag  /= nf90_noerr) then
       if (fatal) then
-        write(error_unit,'(2a)') 'FATAL ERROR:', nf90_strerror(error_flag)
+        write(error_unit,'(2a)') 'FATAL ERROR: ', nf90_strerror(error_flag)
         if (present(err_string)) write(error_unit,'(a)') trim(err_string)
         error stop
       end if
