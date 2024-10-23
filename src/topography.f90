@@ -263,7 +263,6 @@ contains
       silent_ = .false.
     end if
 
-    ! Do
     land = this%nxt + this%nyt + 1
     sea = land
     do j = 1, this%nyt
@@ -327,8 +326,11 @@ contains
         im = this%nxt
         ip = 2
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(im, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
-          counter = counter + 1
+          new_sea = min(sea(im, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          if (sea(i, j) /= new_sea) then
+            sea(i, j) = new_sea
+            counter = counter + 1
+          end if
         end if
         do i = 2, this%nxt - 1
           im = i - 1
@@ -355,8 +357,11 @@ contains
         ip = 1
         im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j)=min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
-          counter = counter + 1
+          new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          if (sea(i, j) /= new_sea) then
+            sea(i, j) = new_sea
+            counter = counter + 1
+          end if
         end if
       end do
 
@@ -368,8 +373,11 @@ contains
         im = this%nxt
         ip = 2
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
-          counter = counter + 1
+          new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          if (sea(i, j) /= new_sea) then
+            sea(i, j) = new_sea
+            counter = counter + 1
+          end if
         end if
         do i = this%nxt - 1, 2, -1
           im = i - 1
@@ -396,8 +404,11 @@ contains
         ip = 1
         im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
-          counter = counter + 1
+          new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          if (sea(i, j) /= new_sea) then
+            sea(i, j) = new_sea
+            counter = counter + 1
+          end if
         end if
       end do
 
