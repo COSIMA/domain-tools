@@ -327,7 +327,7 @@ contains
         im = this%nxt
         ip = 2
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          sea(i,j) = min(sea(im, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
         end if
         do i = 2, this%nxt - 1
@@ -335,15 +335,15 @@ contains
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
             if ( this%grid_type == 'C' ) then
-              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)]), land)
+              new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
             else
               ! get chokes, assuming B-grid connectivity rules
               choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
               choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
               choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
               choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
-                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+              new_sea = min(sea(i, j), minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]))
             end if
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
@@ -355,7 +355,7 @@ contains
         ip = 1
         im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j)=min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          sea(i,j)=min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
         end if
       end do
@@ -368,7 +368,7 @@ contains
         im = this%nxt
         ip = 2
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          sea(i,j) = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
         end if
         do i = this%nxt - 1, 2, -1
@@ -376,15 +376,15 @@ contains
           ip = i + 1
           if (sea(i, j) < land .and. sea(i, j) > 0) then
             if ( this%grid_type == 'C' ) then
-              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)]), land)
+              new_sea = min(sea(i, j), sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
             else
               ! get chokes, assuming B-grid connectivity rules
               choke_east = .not. (any(sea(i:ip, jp) == land) .and. any(sea(i:ip, jm) == land))
               choke_west = .not. (any(sea(im:i, jp) == land) .and. any(sea(im:i, jm) == land))
               choke_south = .not. (any(sea(im, jm:j) == land) .and. any(sea(ip, jm:j) == land))
               choke_north = .not. (any(sea(im, j:jp) == land) .and. any(sea(ip, j:jp) == land))
-              new_sea = min(minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
-                mask=[choke_west, choke_east, choke_south, choke_north]), land)
+              new_sea = min(sea(i, j), minval([sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp)], &
+                mask=[choke_west, choke_east, choke_south, choke_north]))
             end if
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
@@ -396,7 +396,7 @@ contains
         ip = 1
         im = i - 1
         if (sea(i, j) < land .and. sea(i, j) > 0) then
-          sea(i,j) = min(sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+          sea(i,j) = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
           counter = counter + 1
         end if
       end do
@@ -449,7 +449,7 @@ contains
       this%depth = MISSING_VALUE
       this%frac = MISSING_VALUE
     end where
-    this%lakes_removed = "yes"
+    this%lakes_removed = 'yes'
 
     deallocate(sea)
 
@@ -506,7 +506,7 @@ contains
         call this%number_seas(number_of_seas = nseas, silent=.true.)
         if (nseas > 1) then
           write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
-          this%lakes_removed = 'no'
+          this%lakes_removed = 'no '
         end if
       end if
     end if
@@ -644,7 +644,7 @@ contains
         call this%number_seas(number_of_seas = nseas, silent=.true.)
         if (nseas > 1) then
           write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."
-          this%lakes_removed = 'no'
+          this%lakes_removed = 'no '
         end if
       end if
     end if
