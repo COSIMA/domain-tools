@@ -49,17 +49,8 @@ contains
     character(len=*), intent(in) :: filename
     character(len=1), intent(in), optional :: grid_type
 
+    character(len=1):: file_grid_type
     integer(int32) :: ncid, depth_id, frac_id, geolon_id, geolat_id, dids(2), history_len ! NetCDF ids
-
-    if (present(grid_type)) then
-      if ( grid_type == 'B' .or. grid_type == 'C' ) then
-        topog%grid_type = grid_type
-      else
-        call handle_error(nf90_einval, .true., "grid_type must be B or C")
-      end if
-    else
-      topog%grid_type = 'B'
-    end if
 
     write(output_unit,'(3a)') "Reading topography from file '", trim(filename), "'"
 
@@ -83,6 +74,19 @@ contains
     call handle_error(nf90_get_att(ncid, depth_id, 'minimum_levels', topog%min_level), isfatal=.false.)
     call handle_error(nf90_get_att(ncid, depth_id, 'maximum_depth', topog%max_depth), isfatal=.false.)
     call handle_error(nf90_get_att(ncid, depth_id, 'nonadvective_cells_removed', topog%nonadvective_cells_removed), isfatal=.false.)
+
+    if (present(grid_type)) then
+      topog%grid_type = grid_type ! grid_type arg overrides value in file
+    else
+      call handle_error(nf90_get_att(ncid, depth_id, 'grid_type', file_grid_type), isfatal=.false.)
+      if ( file_grid_type == 'B' .or. file_grid_type == 'C' ) then
+        topog%grid_type = file_grid_type
+      end if
+    end if
+    write(output_unit,*) "  grid_type = ", topog%grid_type
+    if (.not.( topog%grid_type == 'B' .or. topog%grid_type == 'C' )) then
+      call handle_error(nf90_einval, .true., "grid_type must be B or C")
+    end if
 
     ! Get sea area fraction
     call handle_error(nf90_inq_varid(ncid, 'sea_area_fraction', frac_id))
@@ -541,6 +545,10 @@ contains
     integer(int32) :: im, ip, jm, jp
     integer(int32) :: nseas
 
+    if ( this%grid_type /= 'B' ) then
+      call handle_error(nf90_einval, .true., "nonadvective: grid_type must be B")
+    end if
+
     vgrid = vgrid_t(vgrid_file, vgrid_type)
     write(output_unit,*) 'Zeta dimensions', 2*vgrid%nlevels + 1, vgrid%nlevels
     allocate(zw(0:vgrid%nlevels))
@@ -651,7 +659,7 @@ contains
     if (fix .and. (coastal .or. potholes)) then
       this%nonadvective_cells_removed = 'yes'
       if (changes_made .and. this%lakes_removed == 'yes') then
-        ! Check if new lakes were created new lakes
+        ! Check if new lakes were created
         call this%number_seas(number_of_seas = nseas, silent=.true.)
         if (nseas > 1) then
           write(output_unit,'(a)') "WARNING: new seas have been created. To fix, rerun deseas again."

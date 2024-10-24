@@ -23,7 +23,7 @@ program topogtools
     'usage: topogtools [--help] <command> [<args>]                                   ', &
     '                                                                                ', &
     'Collection of tools to edit and manipulate ocean model topographies.            ', &
-    'See ''topogtools --help <command>'' to read about a specific subcommand.          ', &
+    'See ''topogtools --help <command>'' to read about a specific subcommand.        ', &
     '                                                                                ', &
     'Available commands:                                                             ', &
     '  gen_topo - Generate a new topography file from a bathymetry                   ', &
@@ -46,7 +46,7 @@ program topogtools
     '                                tripolar grid                                   ', &
     '    --longitude-offset <value>  offset (in degrees) between the central         ', &
     '                                longitude of the ocean horizontal grid and of   ', &
-    '                                the bathymetry grid (default ''0.0'')             ', &
+    '                                the bathymetry grid (default ''0.0'')           ', &
     '']
   help_deseas = [character(len=80) :: &
     'usage: topogtools deseas --input <input_file> --output <output_file>            ', &
@@ -67,23 +67,19 @@ program topogtools
     'Can produce non-advective cells.                                                ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --vgrid <vgrid>      vertical grid (default ''ocean_vgrid.nc'')               ', &
-    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
+    '    --vgrid <vgrid>      vertical grid (default ''ocean_vgrid.nc'')             ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')         ', &
     '']
   help_fill_fraction = [character(len=80) :: &
     'usage: topogtools fill_fraction --input <input_file> --output <output_file>     ', &
-    '                                --fraction <frac> [--grid_type <type>]          ', &
+    '                                --fraction <frac>                               ', &
     '                                                                                ', &
     'Cells with a fraction of sea area smaller than <frac> will have their depth set ', &
     'to zero. Can produce non-advective cells and/or new seas.                       ', &
-    '                                                                                ', &
-    'Options                                                                         ', &
-    '    --grid_type <type> Arakawa type of horizontal grid (''B'' or ''C''; default ''B'')', &
     '']
   help_fix_nonadvective = [character(len=80) :: &
     'usage: topogtools fix_nonadvective --input <input_file> --output <output_file>  ', &
-    '                                   [--grid_type <type>                          ', &
-    '                                    --vgrid <vgrid> --vgrid_type <type>         ', &
+    '                                   [--vgrid <vgrid> --vgrid_type <type>         ', &
     '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Fix non-advective cells. There are two types of fixes available: potholes and   ', &
@@ -91,16 +87,14 @@ program topogtools
     'needed when using a B-grid.                                                     ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --grid_type <type> Arakawa type of horizontal grid (''B'' or ''C''; default ''B'')', &
-    '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
-    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
+    '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                 ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')         ', &
     '    --potholes       fix potholes                                               ', &
     '    --coastal-cells  fix non-advective coastal cells                            ', &
     '']
   help_check_nonadvective = [character(len=80) :: &
     'usage: topogtools check_nonadvective --input <input_file>                       ', &
-    '                                   [--grid_type <type>                          ', &
-    '                                    --vgrid <vgrid> --vgrid_type <type>         ', &
+    '                                   [--vgrid <vgrid> --vgrid_type <type>         ', &
     '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Check for non-advective cells. There are two types of checks available: potholes', &
@@ -108,11 +102,10 @@ program topogtools
     'only be needed when using a B-grid.                                             ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --grid_type <type> Arakawa type of horizontal grid (''B'' or ''C''; default ''B'')', &
-    '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                   ', &
-    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')               ', &
+    '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                 ', &
+    '    --vgrid_type <type>  can be ''mom5'' or ''mom6'' (default ''mom5'')         ', &
     '    --potholes       check for potholes                                         ', &
-    '    --coastal-cells  check for non-advective coastal cells                      ', &
+    '    --coastal-cells  check for non-advective coastal cells (for B grid)         ', &
     '']
   help_mask = [character(len=80) :: &
     'usage: topogtools mask  --input <input_file> --output <output_file>             ', &
@@ -132,12 +125,12 @@ program topogtools
     call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --level 0', &
       help_min_max_depth, version_text)
   case('fill_fraction')
-    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0 --grid_type "B"', help_fill_fraction, version_text)
+    call set_args('--input:i "unset" --output:o "unset" --fraction 0.0', help_fill_fraction, version_text)
   case ('fix_nonadvective')
-    call set_args('--input:i "unset" --output:o "unset" --grid_type "B" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F &
+    call set_args('--input:i "unset" --output:o "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F &
       &--coastal-cells F', help_fix_nonadvective, version_text)
   case ('check_nonadvective')
-    call set_args('--input:i "unset" --grid_type "B" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F --coastal-cells F', &
+    call set_args('--input:i "unset" --vgrid "ocean_vgrid.nc" --vgrid_type "mom5" --potholes F --coastal-cells F', &
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
@@ -202,19 +195,19 @@ program topogtools
       write(error_unit,'(a)') "ERROR: sea area fraction must be larger than 0 and smaller than 1"
       error stop
     end if
-    topog = topography_t(file_in, grid_type=sget('grid_type'))
+    topog = topography_t(file_in)
     call topog%fill_fraction(sea_area_fraction)
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('fix_nonadvective')
-    topog = topography_t(file_in, grid_type=sget('grid_type'))
+    topog = topography_t(file_in)
     call topog%nonadvective(vgrid, sget('vgrid_type'), lget('potholes'), lget('coastal-cells'), fix=.true.)
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
   case ('check_nonadvective')
-    topog = topography_t(file_in, grid_type=sget('grid_type'))
+    topog = topography_t(file_in)
     call topog%nonadvective(vgrid, sget('vgrid_type'), lget('potholes'), lget('coastal-cells'), fix=.false.)
 
   case ('mask')
