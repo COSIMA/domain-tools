@@ -35,6 +35,7 @@ module topography
     procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
+    procedure :: cut_off_T_cells => topography_cut_off_T_cells
   end type topography_t
 
   interface topography_t
@@ -463,6 +464,55 @@ contains
     end do
 
   end subroutine topography_min_max_depth
+
+ subroutine topography_cut_off_T_cells(this, hgrid, cutoff)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: hgrid
+    real(real64), intent(in) :: cutoff
+
+    integer(int32) :: i,j
+    integer(int32) :: ncid_hgrid, dy_id          ! NetCDF ids for hgrid
+    integer(int32) :: dids_dy(2)                 ! NetCDF ids for dimensions
+    integer(int32) :: ny_len, nxp_len, nx_len    ! dimensions for hgrid
+    real(real64), allocatable :: dy(:,:)         ! To store dy variable from hgrid
+    real(real64), allocatable :: dy_t(:,:)       ! To store dy_t (new array)
+
+    ! Read hgrid to get dy
+    print*, 'Attempting to open:', trim(hgrid)
+    call handle_error(nf90_open(trim(hgrid), nf90_nowrite, ncid_hgrid))
+    call handle_error(nf90_inq_varid(ncid_hgrid, 'dy', dy_id))
+    call handle_error(nf90_inquire_variable(ncid_hgrid, dy_id, dimids=dids_dy))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(1), len=ny_len))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(2), len=nxp_len))
+
+    ! Allocate memory for dy based on its dimensions
+    allocate(dy(ny_len, nxp_len))
+
+    ! Read the dy variable from hgrid
+    call handle_error(nf90_get_var(ncid_hgrid, dy_id, dy))
+    call handle_error(nf90_close(ncid_hgrid))
+
+    ! Calculate dy_t based on dy
+    ! dy_t = dy[::2, 1::2] + dy[1::2, 1::2]
+    ! This means dy_t will have half the number of rows and columns as dy
+    allocate(dy_t(int(ny_len / 2), int((nxp_len - 1) / 2)))
+
+    do i = 1, int(ny_len / 2)
+      do j = 1, int((nxp_len - 1) / 2)
+          dy_t(i, j) = dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j)
+      end do
+    end do
+  
+    ! Apply cutoff to depth based on the provided T-cell cutoff value in kilometers
+    do i = 1, int(ny_len / 2)
+      do j = 1, int((nxp_len - 1) / 2)
+            if (dy_t(i, j) < cutoff*1000.0) then  !Input cutoff in Kilometers covert it to meters
+              this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
+            end if
+        end do
+    end do
+
+end subroutine topography_cut_off_T_cells
 
   !-------------------------------------------------------------------------
   subroutine topography_fill_fraction(this, sea_area_fraction)

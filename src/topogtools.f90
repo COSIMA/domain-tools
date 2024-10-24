@@ -8,12 +8,13 @@ program topogtools
   character(len=5), PARAMETER :: VERSION = "1.0.0"
 
   character(len=:), allocatable :: name
-  character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:)
+  character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:), help_cutoff(:)
   character(len=:), allocatable :: help_fill_fraction(:), help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
   character(len=80) :: version_text(1)
   character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
   type(topography_t) :: topog
   real(real32) :: sea_area_fraction
+  real(real64) :: cutoff
   integer :: ii
 
   version_text(1) = 'topogtools version '//VERSION
@@ -33,6 +34,7 @@ program topogtools
     '  check_nonadvective - Check for non-advective cells                            ', &
     '  fix_nonadvective - Fix non-advective cells                                    ', &
     '  mask - Generate mask                                                          ', &
+    '  cut_off_T_cells - Cut off T cells below a certain cell size                   ', &
     '']
   help_gen_topo = [character(len=80) :: &
     'usage: topogtools gen_topo --input <input_file> --output <output_file>          ', &
@@ -109,6 +111,14 @@ program topogtools
     'Creates a land mask from a topography.                                          ', &
     '']
 
+  help_cutoff = [character(len=80) :: &
+    'usage: topogtools cut_off_T_cells --input <input_file> --output <output_file>   ', &
+    '                                  --hgrid <grid> --cutoff <cutoff_value>        ', &
+    '                                                                                ', &
+    'Cut off T cells with size smaller than <cutoff_value>. Writes the               ', &
+    'result to <output_file>.                                                        ', &
+    'Cut off should be in kilometers']
+
   ! Read command line
   name = get_subcommand()
   select case (name)
@@ -130,6 +140,8 @@ program topogtools
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
+  case ('cut_off_T_cells')
+    call set_args('--input:i "unset" --output:o "unset" --hgrid "ocean_hgrid.nc" --cutoff 0.0', help_cutoff, version_text)
   case ('')
     ! Print help in case the user specified the --help flag
     call set_args(' ', help_general, version_text)
@@ -209,6 +221,24 @@ program topogtools
   case ('mask')
     topog = topography_t(file_in)
     call topog%mask(file_out)
+
+  case ('cut_off_T_cells')
+    hgrid = sget('hgrid')
+    call check_file_exist(hgrid)
+    cutoff = rget('cutoff')
+    if (cutoff <= 0.0) then
+      write(error_unit,'(a)') "ERROR: cutoff value must be larger than 0 "
+      error stop
+    end if
+    file_out = sget('output')
+    if (file_out == 'unset') then
+      write(error_unit,'(a)') 'ERROR: no output file specified'
+      error stop
+    end if  
+    topog = topography_t(file_in)
+    call topog%cut_off_T_cells(hgrid,cutoff)
+    call topog%update_history(get_mycommand())
+    call topog%write(file_out)
 
   end select
 

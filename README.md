@@ -137,6 +137,13 @@ double-precision topography file.
 Options
   * `--vgrid <vgrid>`  vertical grid (default 'ocean_vgrid.nc')
 
+## cut_off_T_cells
+
+```
+usage: topogtools cut_off_T_cells --input <input_file> --output <output_file> --hgrid <grid> --cutoff <cutoff_value>       
+```
+
+Cut off T cells with size smaller than <cutoff_value>. Cut off should be in kilometers
 
 # Building and Installation
 
