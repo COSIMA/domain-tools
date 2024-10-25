@@ -506,10 +506,10 @@ contains
     ! Apply cutoff to depth based on the provided T-cell cutoff value in kilometers
     do i = 1, int(ny_len / 2)
       do j = 1, int((nxp_len - 1) / 2)
-            if (dy_t(i, j) < cutoff*1000.0) then  !Input cutoff in Kilometers covert it to meters
-              this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
-            end if
-        end do
+        if (dy_t(i, j) < cutoff*1000.0_real64) then  !Input cutoff in Kilometers covert it to meters
+          this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
+        end if
+      end do
     end do
 
 end subroutine topography_cut_off_T_cells
