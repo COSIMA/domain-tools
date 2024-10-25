@@ -499,7 +499,7 @@ contains
 
     do i = 1, int(ny_len / 2)
       do j = 1, int((nxp_len - 1) / 2)
-          dy_t(i, j) = dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j)
+        dy_t(i, j) = dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j)
       end do
     end do
   
