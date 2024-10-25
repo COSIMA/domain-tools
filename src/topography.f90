@@ -475,7 +475,6 @@ contains
     integer(int32) :: dids_dy(2)                 ! NetCDF ids for dimensions
     integer(int32) :: ny_len, nxp_len, nx_len    ! dimensions for hgrid
     real(real64), allocatable :: dy(:,:)         ! To store dy variable from hgrid
-    real(real64), allocatable :: dy_t(:,:)       ! To store dy_t (new array)
 
     ! Read hgrid to get dy
     write(output_unit,'(3a)') "Attempting to open file '", trim(hgrid), "'"
@@ -492,25 +491,16 @@ contains
     call handle_error(nf90_get_var(ncid_hgrid, dy_id, dy))
     call handle_error(nf90_close(ncid_hgrid))
 
-    ! Calculate dy_t based on dy
-    ! dy_t = dy[::2, 1::2] + dy[1::2, 1::2]
-    ! This means dy_t will have half the number of rows and columns as dy
-    allocate(dy_t(int(ny_len / 2), int((nxp_len - 1) / 2)))
-
-    do i = 1, int(ny_len / 2)
-      do j = 1, int((nxp_len - 1) / 2)
-        dy_t(i, j) = dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j)
-      end do
-    end do
-  
+    ! Calculate T cell size based on dy
+    ! For each point, the T cell size is a sum of dy(2*i-1, 2*j) and dy(2*i, 2*j)    
     ! Apply cutoff to depth based on the provided T-cell cutoff value in kilometers
-    do i = 1, int(ny_len / 2)
-      do j = 1, int((nxp_len - 1) / 2)
-        if (dy_t(i, j) < cutoff*1000.0_real64) then  !Input cutoff in Kilometers covert it to meters
-          this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
-        end if
-      end do
-    end do
+    do i = 1, ny_len / 2
+      do j = 1, (nxp_len - 1) / 2
+          if (dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j) < cutoff*1000.0_real64) then  !Input cutoff in Kilometers covert it to meters
+            this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
+          end if
+        end do
+    end do   
 
 end subroutine topography_cut_off_T_cells
 
