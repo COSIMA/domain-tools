@@ -84,7 +84,7 @@ contains
       end if
     end if
     write(output_unit,*) "  grid_type = ", topog%grid_type
-    if (.not.( topog%grid_type == 'B' .or. topog%grid_type == 'C' )) then
+    if (all(topog%grid_type /= ['B', 'C'])) then
       call handle_error(nf90_einval, .true., "grid_type must be B or C")
     end if
 
