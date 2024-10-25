@@ -478,7 +478,7 @@ contains
     real(real64), allocatable :: dy_t(:,:)       ! To store dy_t (new array)
 
     ! Read hgrid to get dy
-    print*, 'Attempting to open:', trim(hgrid)
+    write(output_unit,'(3a)') "Attempting to open file '", trim(hgrid), "'"
     call handle_error(nf90_open(trim(hgrid), nf90_nowrite, ncid_hgrid))
     call handle_error(nf90_inq_varid(ncid_hgrid, 'dy', dy_id))
     call handle_error(nf90_inquire_variable(ncid_hgrid, dy_id, dimids=dids_dy))
