@@ -24,9 +24,21 @@ Available commands:
   * `gen_topo` - Generate a new topography file from a bathymetry
   * `deseas` - Remove enclosed seas
   * `min_max_depth` - Set minimum and maximum depth
+  * `fill_fraction` - Set cells with unsufficient ocean fraction to land
   * `check_nonadvective` - Check for non-advective cells
   * `fix_nonadvective` - Fix non-advective cells
   * `mask` - Generate mask
+
+All commands other than `gen_topo` will add the following attributes to the
+`depth` variable in `<output_file>`. Except where explained below, these
+attributes will be copied from `<input_file>` if present, or otherwise set to
+the default values in this table.
+
+| Attribute        | Default  | Description |
+|---|:-:|---|
+| `grid_type`      | 'B' | Arakawa grid type (B or C); determines advective connectivity between cells when counting seas in `deseas`, `fill_fraction`, `check_nonadvective` and `fix_nonadvective`  |
+| `lakes_removed`  | 'no ' | Whether all isolated water bodies have been replaced by land |
+| `nonadvective_cells_removed` | 'yes' | Whether `fix_nonadvective` has been applied (BUG: always 'yes') |
 
 ### gen_topo
 
@@ -48,10 +60,18 @@ Options
 usage: topogtools deseas --input <input_file> --output <output_file> [--grid_type <type>]
 ```
 
-Remove enclosed seas from <input_file> and writes the result to <output_file>.
+Remove enclosed seas from `<input_file>` and write the result to
+`<output_file>`, using advective connectivity rules set by `--grid_type` (B or
+C); if `--grid_type` is not specified, the `grid_type` attribute of `depth` in
+`<input_file>` is used, defaulting to B if that attribute is absent.
+
+Sets the `lakes_removed` attribute in `<output_file>` to `yes`. If `--grid_type`
+is specified, this  sets the `grid_type` attribute in `<output_file>`.
+
+Also creates a `sea_num.nc` file showing how the seas are numbered.
 
 Options
-  * `--grid_type <type>` Arakawa type of horizontal grid ('B' or 'C'; default is 'B')
+  * `--grid_type <type>` Arakawa type of horizontal grid (B or C; default is B)
 
 ### min_max_depth
 
@@ -61,8 +81,11 @@ usage: topogtools min_max_depth --input <input_file> --output <output_file>
                                 [--vgrid <vgrid> --vgrid_type <type>]
 ```
 
-Set minimum depth to the depth at a specified level and set maximum depth to
+Set minimum depth to the depth at level `<level>` and set maximum depth to
 deepest in `<vgrid>`. `<level>` is the minimum number of depth levels (e.g. 4).
+These values are recorded in the `minimum_levels`, `minimum_depth` and
+`maximum_depth` attributes of `depth` in `<output_file>`.
+
 Can produce non-advective cells.
 
 Options
@@ -76,8 +99,13 @@ usage: topogtools fill_fraction --input <input_file> --output <output_file>
                                 --fraction <frac>
 ```
 
-Cells with a fraction of sea area smaller than <frac> will have their depth set
-to zero. Can produce non-advective cells and/or new seas.
+Cells with a fraction of sea area smaller than `<frac>` will have their depth
+set to zero.
+
+Can produce non-advective cells.
+
+Can also produce new isolated seas - if this is the case, a warning is given and
+the `lakes_removed` attribute of `depth` is set to 'no '.
 
 ### check_nonadvective
 
@@ -89,7 +117,7 @@ usage: topogtools check_nonadvective --input <input_file>
 
 Check topography for non-advective cells. There are two types of checks
 available: potholes and non-advective coastal cells. B-grid connectivity rules
-are assumed. Aborts if input_file is not on a B-grid.
+are assumed. Aborts if `<input_file>` is not on a B-grid.
 
 Options
   * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
@@ -106,8 +134,12 @@ usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
 ```
 
 Fix non-advective cells. There are two types of checks available: potholes and
-non-advective coastal cells. B-grid connectivity rules are assumed. Aborts if
-input_file is not on a B-grid.
+non-advective coastal cells. If either is used, the `nonadvective_cells_removed`
+attribute of `depth` is set to 'yes'. B-grid connectivity rules are assumed.
+Aborts if `<input_file>` is not on a B-grid.
+
+Can produce new isolated seas. If this is the case, a warning is given and the
+`lakes_removed` attribute of `depth` is set to 'no '.
 
 Options
   * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
