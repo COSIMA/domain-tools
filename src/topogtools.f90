@@ -236,7 +236,7 @@ program topogtools
       error stop
     end if  
     topog = topography_t(file_in)
-    call topog%cut_off_T_cells(hgrid,cutoff)
+    call topog%cut_off_T_cells(hgrid, cutoff)
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
