@@ -471,7 +471,7 @@ contains
     real(real64), intent(in) :: cutoff
 
     integer(int32) :: i, j
-    integer(int32) :: ncid_hgrid, dy_id          ! NetCDF ids for hgrid
+    integer(int32) :: ncid_hgrid, dy_id          ! NetCDF ids for hgrid and dy
     integer(int32) :: dids_dy(2)                 ! NetCDF ids for dimensions
     integer(int32) :: ny_len, nxp_len, nx_len    ! dimensions for hgrid
     real(real64), allocatable :: dy(:,:)         ! To store dy variable from hgrid
