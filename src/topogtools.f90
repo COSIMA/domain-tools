@@ -52,10 +52,16 @@ program topogtools
     'usage: topogtools deseas --input <input_file> --output <output_file>            ', &
     '                                   [--grid_type <type>]                         ', &
     '                                                                                ', &
-    'Remove enclosed seas from <input_file> and writes the result to <output_file>.  ', &
+    'Remove enclosed seas from <input_file> and write the result to <output_file>,   ', &
+    'adding/updating attributes of depth: lakes_removed=''yes'' and grid_type=<type>.', &
+    'Also creates a sea_num.nc file showing how the seas are numbered.               ', &
     '                                                                                ', &
     'Options                                                                         ', &
-    '    --grid_type <type> Arakawa type of horizontal grid (''B'' or ''C''; default ''B'')', &
+    '    --grid_type <type> ''B'' (mom5) or ''C'' (mom6): sets Arakawa grid type of  ', &
+    '                       horizontal grid, used to determine advective connectivity', &
+    '                       between cells. If --grid_type isn''t specified, <type> is', &
+    '                       read from grid_type attribute of depth in <input_file>,  ', &
+    '                       defaulting to ''B'' if that attribute is absent.         ', &
     '']
   help_min_max_depth = [character(len=80) :: &
     'usage: topogtools min_max_depth --input <input_file> --output <output_file>     ', &
@@ -75,7 +81,9 @@ program topogtools
     '                                --fraction <frac>                               ', &
     '                                                                                ', &
     'Cells with a fraction of sea area smaller than <frac> will have their depth set ', &
-    'to zero. Can produce non-advective cells and/or new seas.                       ', &
+    'to zero. Can produce non-advective cells and/or new seas. If new seas created   ', &
+    '(under connectivity rules set by the grid_type attribute, defaulting to ''B''), ', &
+    'a warning is given and the lakes_removed attribute is set to ''no ''.           ', &
     '']
   help_fix_nonadvective = [character(len=80) :: &
     'usage: topogtools fix_nonadvective --input <input_file> --output <output_file>  ', &
@@ -83,8 +91,10 @@ program topogtools
     '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Fix non-advective cells. There are two types of fixes available: potholes and   ', &
-    'non-advective coastal cells. Fixes to non-advective coastal cells should only be', &
-    'needed when using a B-grid.                                                     ', &
+    'non-advective coastal cells. B-grid connectivity rules are assumed. Aborts if   ', &
+    'grid_type attribute of depth in <input_file> is present and not ''B''.          ', &
+    'If new seas are created (under B-grid connectivity rules), a warning is given   ', &
+    'and the lakes_removed attribute is set to ''no ''.                              ', &
     '                                                                                ', &
     'Options                                                                         ', &
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                 ', &
@@ -98,8 +108,8 @@ program topogtools
     '                                    --potholes --coastal_cells]                 ', &
     '                                                                                ', &
     'Check for non-advective cells. There are two types of checks available: potholes', &
-    'and non-advective coastal cells. Checking for non-advective coastal cells should', &
-    'only be needed when using a B-grid.                                             ', &
+    'and non-advective coastal cells. B-grid connectivity rules are assumed. Aborts  ', &
+    'if grid_type attribute of depth in <input_file> is present and not ''B''.       ', &
     '                                                                                ', &
     'Options                                                                         ', &
     '    --vgrid <vgrid>  vertical grid (default ''ocean_vgrid.nc'')                 ', &

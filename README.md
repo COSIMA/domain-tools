@@ -65,7 +65,7 @@ Remove enclosed seas from `<input_file>` and write the result to
 C); if `--grid_type` is not specified, the `grid_type` attribute of `depth` in
 `<input_file>` is used, defaulting to B if that attribute is absent.
 
-Sets the `lakes_removed` attribute in `<output_file>` to `yes`. If `--grid_type`
+Sets the `lakes_removed` attribute in `<output_file>` to 'yes'. If `--grid_type`
 is specified, this  sets the `grid_type` attribute in `<output_file>`.
 
 Also creates a `sea_num.nc` file showing how the seas are numbered.
@@ -117,7 +117,8 @@ usage: topogtools check_nonadvective --input <input_file>
 
 Check topography for non-advective cells. There are two types of checks
 available: potholes and non-advective coastal cells. B-grid connectivity rules
-are assumed. Aborts if `<input_file>` is not on a B-grid.
+are assumed. Aborts if `grid_type` attribute of `depth` in `<input_file>` is
+present and not 'B'.
 
 Options
   * `--vgrid <vgrid>`      vertical grid (default 'ocean_vgrid.nc')
@@ -136,7 +137,7 @@ usage: topogtools fix_nonadvective --input <input_file> --output <output_file>
 Fix non-advective cells. There are two types of checks available: potholes and
 non-advective coastal cells. If either is used, the `nonadvective_cells_removed`
 attribute of `depth` is set to 'yes'. B-grid connectivity rules are assumed.
-Aborts if `<input_file>` is not on a B-grid.
+Aborts if `grid_type` attribute of `depth` in `<input_file>` is present and not 'B'.
 
 Can produce new isolated seas. If this is the case, a warning is given and the
 `lakes_removed` attribute of `depth` is set to 'no '.
