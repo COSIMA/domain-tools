@@ -350,6 +350,9 @@ contains
                 mask=[choke_west, choke_east, choke_south, choke_north]))
             case ('C')
               new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+            case default
+              write(error_unit, '(a)') "topogtools: grid_type must be B or C"
+              error stop
             end select
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
@@ -397,6 +400,9 @@ contains
                 mask=[choke_west, choke_east, choke_south, choke_north]))
             case ('C')
               new_sea = min(sea(i, j), sea(im, j), sea(ip, j), sea(i, jm), sea(i, jp))
+            case default
+              write(error_unit, '(a)') "topogtools: grid_type must be B or C"
+              error stop
             end select
             if (sea(i, j) /= new_sea) then
               sea(i, j) = new_sea
