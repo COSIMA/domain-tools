@@ -143,7 +143,7 @@ Options
 usage: topogtools min_dy --input <input_file> --output <output_file> --hgrid <grid> --cutoff <cutoff_value>       
 ```
 
-Convert ocean cells into land if their y size is smaller than <cutoff_value> kilometres.
+Convert ocean cells into land if their y size is smaller than <cutoff_value> metres.
 
 # Building and Installation
 
