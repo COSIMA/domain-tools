@@ -485,7 +485,7 @@ contains
     call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(2), len=nxp_len))
 
     ! Allocate memory for dy based on its dimensions
-    allocate(dy(ny_len, nxp_len))
+    allocate(dy(nxp_len, ny_len))
 
     ! Read the dy variable from hgrid
     call handle_error(nf90_get_var(ncid_hgrid, dy_id, dy))
@@ -494,8 +494,8 @@ contains
     ! Calculate T cell size based on dy
     ! For each point, the T cell size is a sum of dy(2*i-1, 2*j) and dy(2*i, 2*j)    
     ! Apply cutoff to depth based on the provided T-cell cutoff value in meters
-    do i = 1, ny_len / 2
-      do j = 1, (nxp_len - 1) / 2
+    do j = 1, ny_len / 2
+      do i = 1, (nxp_len - 1) / 2
           if (dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j) < cutoff) then  !Input cutoff in meters
             this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
           end if
