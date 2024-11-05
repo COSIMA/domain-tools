@@ -116,14 +116,9 @@ Options
 
 ```
 usage: topogtools mask  --input <input_file> --output <output_file>
-                        [--fraction <frac>]
 ```
 
 Creates a land mask from a topography.
-
-Options
-  * `--fraction <frac>`  cells with a fraction of sea area smaller than `<frac>` will be set as land (default '0.0')
-
 
 ## float_vgrid
 
@@ -144,6 +139,9 @@ usage: topogtools min_dy --input <input_file> --output <output_file> --hgrid <gr
 ```
 
 Convert ocean cells into land if their y size is smaller than <cutoff_value> metres.
+
+Options
+  * `--hgrid <hgrid>`  vertical grid (default 'ocean_hgrid.nc')
 
 # Building and Installation
 
