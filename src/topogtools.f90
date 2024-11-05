@@ -34,7 +34,7 @@ program topogtools
     '  check_nonadvective - Check for non-advective cells                            ', &
     '  fix_nonadvective - Fix non-advective cells                                    ', &
     '  mask - Generate mask                                                          ', &
-    '  cut_off_T_cells - Cut off T cells below a certain cell size                   ', &
+    '  min_dy - Set small ocean cells to land                                        ', &
     '']
   help_gen_topo = [character(len=80) :: &
     'usage: topogtools gen_topo --input <input_file> --output <output_file>          ', &
