@@ -143,7 +143,7 @@ Options
 usage: topogtools min_dy --input <input_file> --output <output_file> --hgrid <grid> --cutoff <cutoff_value>       
 ```
 
-Cut off T cells with size smaller than <cutoff_value>. Cut off should be in kilometers
+Convert ocean cells into land if their y size is smaller than <cutoff_value> kilometres.
 
 # Building and Installation
 
