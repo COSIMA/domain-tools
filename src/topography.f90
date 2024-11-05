@@ -35,7 +35,7 @@ module topography
     procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
-    procedure :: cut_off_T_cells => topography_cut_off_T_cells
+    procedure :: min_dy => topography_min_dy
   end type topography_t
 
   interface topography_t
@@ -465,7 +465,7 @@ contains
 
   end subroutine topography_min_max_depth
 
- subroutine topography_cut_off_T_cells(this, hgrid, cutoff)
+ subroutine topography_min_dy(this, hgrid, cutoff)
     class(topography_t), intent(inout) :: this
     character(len=*), intent(in) :: hgrid
     real(real64), intent(in) :: cutoff
@@ -502,7 +502,7 @@ contains
         end do
     end do   
 
-end subroutine topography_cut_off_T_cells
+end subroutine topography_min_dy
 
   !-------------------------------------------------------------------------
   subroutine topography_fill_fraction(this, sea_area_fraction)

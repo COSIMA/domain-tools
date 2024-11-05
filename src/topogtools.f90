@@ -144,7 +144,7 @@ program topogtools
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
-  case ('cut_off_T_cells')
+  case ('min_dy')
     call set_args('--input:i "unset" --output:o "unset" --hgrid "ocean_hgrid.nc" --cutoff 0.0', help_cutoff, version_text)
   case ('')
     ! Print help in case the user specified the --help flag
@@ -226,7 +226,7 @@ program topogtools
     topog = topography_t(file_in)
     call topog%mask(file_out)
 
-  case ('cut_off_T_cells')
+  case ('min_dy')
     hgrid = sget('hgrid')
     call check_file_exist(hgrid)
     cutoff = rget('cutoff')
@@ -240,7 +240,7 @@ program topogtools
       error stop
     end if  
     topog = topography_t(file_in)
-    call topog%cut_off_T_cells(hgrid, cutoff)
+    call topog%min_dy(hgrid, cutoff)
     call topog%update_history(get_mycommand())
     call topog%write(file_out)
 
