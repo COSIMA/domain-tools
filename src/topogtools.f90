@@ -112,7 +112,7 @@ program topogtools
     '']
 
   help_cutoff = [character(len=80) :: &
-    'usage: topogtools cut_off_T_cells --input <input_file> --output <output_file>   ', &
+    'usage: topogtools min_dy --input <input_file> --output <output_file>   ', &
     '                                  --cutoff <cutoff_value>        ', &
     '                                  [--hgrid <hgrid_file>]        ', &
     '                                                                                ', &
