@@ -481,8 +481,8 @@ contains
     call handle_error(nf90_open(trim(hgrid), nf90_nowrite, ncid_hgrid))
     call handle_error(nf90_inq_varid(ncid_hgrid, 'dy', dy_id))
     call handle_error(nf90_inquire_variable(ncid_hgrid, dy_id, dimids=dids_dy))
-    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(1), len=ny_len))
-    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(2), len=nxp_len))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(1), len=nxp_len))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(2), len=ny_len))
 
     ! Allocate memory for dy based on its dimensions
     allocate(dy(nxp_len, ny_len))
