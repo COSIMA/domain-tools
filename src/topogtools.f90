@@ -113,7 +113,8 @@ program topogtools
 
   help_cutoff = [character(len=80) :: &
     'usage: topogtools cut_off_T_cells --input <input_file> --output <output_file>   ', &
-    '                                  --hgrid <grid> --cutoff <cutoff_value>        ', &
+    '                                  --cutoff <cutoff_value>        ', &
+    '                                  [--hgrid <hgrid_file>]        ', &
     '                                                                                ', &
     'Convert ocean cells into land if their y size is less than <cutoff_value> in    ', &
     'kilometres. Writes the result to <output_file>.                                 ', &
