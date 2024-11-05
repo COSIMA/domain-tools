@@ -115,9 +115,12 @@ program topogtools
     'usage: topogtools cut_off_T_cells --input <input_file> --output <output_file>   ', &
     '                                  --hgrid <grid> --cutoff <cutoff_value>        ', &
     '                                                                                ', &
-    'Cut off T cells with size smaller than <cutoff_value>. Writes the               ', &
-    'result to <output_file>.                                                        ', &
-    'Cut off should be in kilometers']
+    'Convert ocean cells into land if their y size is less than <cutoff_value> in    ', &
+    'kilometres. Writes the result to <output_file>.                                 ', &
+    '                                                                                ', &
+    'Options                                                                         ', &
+    '   --hgrid <hgrid_file>     horizontal supergrid (default ''ocean_hgrid.nc'')   ', &
+    '']
 
   ! Read command line
   name = get_subcommand()
