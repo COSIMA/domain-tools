@@ -112,9 +112,9 @@ program topogtools
     '']
 
   help_cutoff = [character(len=80) :: &
-    'usage: topogtools min_dy --input <input_file> --output <output_file>   ', &
-    '                                  --cutoff <cutoff_value>        ', &
-    '                                  [--hgrid <hgrid_file>]        ', &
+    'usage: topogtools min_dy --input <input_file> --output <output_file>            ', &
+    '                                  --cutoff <cutoff_value>                       ', &
+    '                                  [--hgrid <hgrid_file>]                        ', &
     '                                                                                ', &
     'Convert ocean cells into land if their y size is less than <cutoff_value>,      ', &
     'expressed in the same units as dy in <hgrid_file> (typically metres).           ', &
