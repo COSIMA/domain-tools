@@ -496,7 +496,7 @@ contains
     ! Apply cutoff to depth based on the provided T-cell cutoff value
     do j = 1, ny_len / 2
       do i = 1, (nxp_len - 1) / 2
-          if (dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j) < cutoff) then  !Input cutoff in meters
+          if (dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j) < cutoff) then
             this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
           end if
         end do
