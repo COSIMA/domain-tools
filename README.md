@@ -138,7 +138,7 @@ Options
 usage: topogtools min_dy --input <input_file> --output <output_file> --hgrid <grid> --cutoff <cutoff_value>       
 ```
 
-Convert ocean cells into land if their y size is smaller than <cutoff_value> metres.
+Convert ocean cells into land if their y size is smaller than `<cutoff_value>`, expressed in the same units as `dy` in `<hgrid_file>` (typically metres).
 
 Options
   * `--hgrid <hgrid>`  vertical grid (default 'ocean_hgrid.nc')
