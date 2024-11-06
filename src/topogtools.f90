@@ -116,8 +116,9 @@ program topogtools
     '                                  --cutoff <cutoff_value>        ', &
     '                                  [--hgrid <hgrid_file>]        ', &
     '                                                                                ', &
-    'Convert ocean cells into land if their y size is less than <cutoff_value> in    ', &
-    'kilometres. Writes the result to <output_file>.                                 ', &
+    'Convert ocean cells into land if their y size is less than <cutoff_value>,      ', &
+    'expressed in the same units as dy in <hgrid_file> (typically metres).           ', &
+    'Writes the result to <output_file>.                                             ', &
     '                                                                                ', &
     'Options                                                                         ', &
     '   --hgrid <hgrid_file>     horizontal supergrid (default ''ocean_hgrid.nc'')   ', &
