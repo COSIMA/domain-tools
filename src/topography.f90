@@ -36,6 +36,7 @@ module topography
     procedure :: nonadvective => topography_nonadvective
     procedure :: min_max_depth => topography_min_max_depth
     procedure :: mask => topography_mask
+    procedure :: min_dy => topography_min_dy
   end type topography_t
 
   interface topography_t
@@ -506,6 +507,45 @@ contains
     end do
 
   end subroutine topography_min_max_depth
+
+ subroutine topography_min_dy(this, hgrid, cutoff)
+    class(topography_t), intent(inout) :: this
+    character(len=*), intent(in) :: hgrid
+    real(real64), intent(in) :: cutoff
+
+    integer(int32) :: i, j
+    integer(int32) :: ncid_hgrid, dy_id          ! NetCDF ids for hgrid and dy
+    integer(int32) :: dids_dy(2)                 ! NetCDF ids for dimensions
+    integer(int32) :: ny_len, nxp_len, nx_len    ! dimensions for hgrid
+    real(real64), allocatable :: dy(:,:)         ! To store dy variable from hgrid
+
+    ! Read hgrid to get dy
+    write(output_unit,'(3a)') "Attempting to open file '", trim(hgrid), "'"
+    call handle_error(nf90_open(trim(hgrid), nf90_nowrite, ncid_hgrid))
+    call handle_error(nf90_inq_varid(ncid_hgrid, 'dy', dy_id))
+    call handle_error(nf90_inquire_variable(ncid_hgrid, dy_id, dimids=dids_dy))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(1), len=nxp_len))
+    call handle_error(nf90_inquire_dimension(ncid_hgrid, dids_dy(2), len=ny_len))
+
+    ! Allocate memory for dy based on its dimensions
+    allocate(dy(nxp_len, ny_len))
+
+    ! Read the dy variable from hgrid
+    call handle_error(nf90_get_var(ncid_hgrid, dy_id, dy))
+    call handle_error(nf90_close(ncid_hgrid))
+
+    ! Calculate T cell size based on dy
+    ! For each point, the T cell size is a sum of dy(2*i-1, 2*j) and dy(2*i, 2*j)    
+    ! Apply cutoff to depth based on the provided T-cell cutoff value
+    do j = 1, ny_len / 2
+      do i = 1, (nxp_len - 1) / 2
+          if (dy(2 * i - 1, 2 * j) + dy(2 * i, 2 * j) < cutoff) then
+            this%depth(i, j) = MISSING_VALUE  ! Set values below cutoff to zero or another value as needed
+          end if
+        end do
+    end do   
+
+end subroutine topography_min_dy
 
   !-------------------------------------------------------------------------
   subroutine topography_fill_fraction(this, sea_area_fraction)

@@ -8,12 +8,13 @@ program topogtools
   character(len=5), PARAMETER :: VERSION = "1.0.0"
 
   character(len=:), allocatable :: name
-  character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:)
+  character(len=:), allocatable :: help_general(:), help_gen_topo(:), help_deseas(:), help_min_max_depth(:), help_cutoff(:)
   character(len=:), allocatable :: help_fill_fraction(:), help_fix_nonadvective(:), help_check_nonadvective(:), help_mask(:)
   character(len=80) :: version_text(1)
   character(len=:), allocatable :: file_in, file_out, hgrid, vgrid
   type(topography_t) :: topog
   real(real32) :: sea_area_fraction
+  real(real64) :: cutoff
   integer :: ii
 
   version_text(1) = 'topogtools version '//VERSION
@@ -33,6 +34,7 @@ program topogtools
     '  check_nonadvective - Check for non-advective cells                            ', &
     '  fix_nonadvective - Fix non-advective cells                                    ', &
     '  mask - Generate mask                                                          ', &
+    '  min_dy - Set small ocean cells to land                                        ', &
     '']
   help_gen_topo = [character(len=80) :: &
     'usage: topogtools gen_topo --input <input_file> --output <output_file>          ', &
@@ -123,6 +125,19 @@ program topogtools
     'Creates a land mask from a topography.                                          ', &
     '']
 
+  help_cutoff = [character(len=80) :: &
+    'usage: topogtools min_dy --input <input_file> --output <output_file>            ', &
+    '                                  --cutoff <cutoff_value>                       ', &
+    '                                  [--hgrid <hgrid_file>]                        ', &
+    '                                                                                ', &
+    'Convert ocean cells into land if their y size is less than <cutoff_value>,      ', &
+    'expressed in the same units as dy in <hgrid_file> (typically metres).           ', &
+    'Writes the result to <output_file>.                                             ', &
+    '                                                                                ', &
+    'Options                                                                         ', &
+    '   --hgrid <hgrid_file>     horizontal supergrid (default ''ocean_hgrid.nc'')   ', &
+    '']
+
   ! Read command line
   name = get_subcommand()
   select case (name)
@@ -144,6 +159,8 @@ program topogtools
       help_check_nonadvective, version_text)
   case ('mask')
     call set_args('--input:i "unset" --output:o "unset"', help_mask, version_text)
+  case ('min_dy')
+    call set_args('--input:i "unset" --output:o "unset" --hgrid "ocean_hgrid.nc" --cutoff 0.0', help_cutoff, version_text)
   case ('')
     ! Print help in case the user specified the --help flag
     call set_args(' ', help_general, version_text)
@@ -223,6 +240,24 @@ program topogtools
   case ('mask')
     topog = topography_t(file_in)
     call topog%mask(file_out)
+
+  case ('min_dy')
+    hgrid = sget('hgrid')
+    call check_file_exist(hgrid)
+    cutoff = rget('cutoff')
+    if (cutoff <= 0.0) then
+      write(error_unit,'(a)') "ERROR: cutoff value must be larger than 0 "
+      error stop
+    end if
+    file_out = sget('output')
+    if (file_out == 'unset') then
+      write(error_unit,'(a)') 'ERROR: no output file specified'
+      error stop
+    end if  
+    topog = topography_t(file_in)
+    call topog%min_dy(hgrid, cutoff)
+    call topog%update_history(get_mycommand())
+    call topog%write(file_out)
 
   end select
 
