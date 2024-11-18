@@ -1,7 +1,7 @@
-module vgrid
+module vgrid_m
   use iso_fortran_env
   use netcdf
-  use utils
+  use utils_m
   implicit none
 
   private
@@ -207,4 +207,4 @@ contains
   end subroutine vgrid_float
 
 
-end module vgrid
+end module vgrid_m

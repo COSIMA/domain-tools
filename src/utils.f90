@@ -1,4 +1,4 @@
-module utils
+module utils_m
   use iso_fortran_env
   use netcdf
   implicit none
@@ -119,4 +119,4 @@ contains
 
   end function get_mycommand
 
-end module utils
+end module utils_m

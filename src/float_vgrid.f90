@@ -1,8 +1,8 @@
 program float_vgrid
   ! Zeta is double precision. Convert to  single and rewrite. This stops small floating point errors.
   use M_CLI2
-  use vgrid
-  use utils
+  use vgrid_m
+  use utils_m
   implicit none
 
   type(vgrid_t) :: vgrid
