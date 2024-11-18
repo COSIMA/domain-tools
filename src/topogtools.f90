@@ -2,7 +2,7 @@ program topogtools
   use, intrinsic :: iso_fortran_env
   use M_CLI2
   use gen_topo_m
-  use topography
+  use topography_m
   implicit none
 
   character(len=5), PARAMETER :: VERSION = "1.0.0"

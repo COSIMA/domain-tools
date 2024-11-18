@@ -13,7 +13,7 @@ module gen_topo_m
   !
   use iso_fortran_env
   use netcdf
-  use utils
+  use utils_m
   implicit none
 
   private

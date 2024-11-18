@@ -1,8 +1,8 @@
-module topography
+module topography_m
   use iso_fortran_env
   use netcdf
-  use utils
-  use vgrid
+  use utils_m
+  use vgrid_m
   implicit none
 
   type topography_t
@@ -761,4 +761,4 @@ end subroutine topography_min_dy
 
   end subroutine topography_mask
 
-end module topography
+end module topography_m
