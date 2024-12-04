@@ -163,8 +163,7 @@ contains
     call handle_error(nf90_def_dim(ncid, 'ny', this%nyt, dids(2)))
 
     ! Write depth
-    call handle_error(nf90_def_var(ncid, 'depth', nf90_float, dids, depth_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'depth', nf90_float, dids, depth_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_def_var_fill(ncid, depth_id, 0, MISSING_VALUE))
     call handle_error(nf90_put_att(ncid, depth_id, 'long_name', 'depth'))
     call handle_error(nf90_put_att(ncid, depth_id, 'units', 'm'))
@@ -181,8 +180,7 @@ contains
     call handle_error(nf90_put_var(ncid, depth_id, this%depth))
 
     ! Write frac
-    call handle_error(nf90_def_var(ncid, 'sea_area_fraction', nf90_float, dids, frac_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'sea_area_fraction', nf90_float, dids, frac_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_def_var_fill(ncid, frac_id, 0, MISSING_VALUE))
     call handle_error(nf90_put_var(ncid, frac_id, this%frac))
 
@@ -207,14 +205,12 @@ contains
     integer(int32) :: geolon_id, geolat_id ! NetCDF ids
 
     ! Write coordinates
-    call handle_error(nf90_def_var(ncid, 'geolon_t', nf90_float, dids, geolon_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'geolon_t', nf90_float, dids, geolon_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_put_att(ncid, geolon_id, 'long_name', 'tracer longitude'))
     call handle_error(nf90_put_att(ncid, geolon_id, 'units', 'degrees_E'))
     call handle_error(nf90_put_var(ncid, geolon_id, this%geolon_t))
 
-    call handle_error(nf90_def_var(ncid, 'geolat_t', nf90_float, dids, geolat_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'geolat_t', nf90_float, dids, geolat_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_put_att(ncid, geolat_id, 'long_name', 'tracer latitude'))
     call handle_error(nf90_put_att(ncid, geolat_id, 'units', 'degrees_N'))
     call handle_error(nf90_put_var(ncid, geolat_id, this%geolat_t))
@@ -460,8 +456,7 @@ contains
     call handle_error(nf90_create(trim('sea_num.nc'), ior(nf90_netcdf4, nf90_clobber), ncid))
     call handle_error(nf90_def_dim(ncid, 'nx', this%nxt, dids(1)))
     call handle_error(nf90_def_dim(ncid, 'ny', this%nyt, dids(2)))
-    call handle_error(nf90_def_var(ncid, 'sea_num', nf90_short, dids, sea_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'sea_num', nf90_short, dids, sea_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_enddef(ncid))
     call handle_error(nf90_put_var(ncid, sea_id, sea))
     call handle_error(nf90_close(ncid))
@@ -747,8 +742,7 @@ end subroutine topography_min_dy
     call this%write_coordinates(ncid, dids)
 
     ! Write mask
-    call handle_error(nf90_def_var(ncid, 'mask', nf90_float, dids, mask_id, chunksizes=[this%nxt/10, this%nyt/10], &
-      deflate_level=1, shuffle=.true.))
+    call handle_error(nf90_def_var(ncid, 'mask', nf90_float, dids, mask_id, deflate_level=1, shuffle=.true.))
     call handle_error(nf90_put_var(ncid, mask_id, mask))
 
     call handle_error(nf90_put_att(ncid, nf90_global, 'history', date_time()//": "//get_mycommand()))
