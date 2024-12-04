@@ -189,7 +189,15 @@ usage: png2nc.py
 Converts `test_topo.png` to `test_topo.nc` for use as a test input file for `topogtools deseas`.
 
 
-# Building and Installation
+## editTopo.py
+
+`editTopo.py` provides a GUI for hand-editing `topog.nc` files, recording every
+change, and applying these changes to other files. This is an updated version of
+Alistair Adcroft's `editTopo.py` from
+[here](https://github.com/aekiss/MOM6-examples/blob/1c3dc5216139f84b20ce3a5d8ea758bdc7912e8e/ice_ocean_SIS2/OM4_025/preprocessing/editTopo.py)
+and is under a [LGPLv3
+license](https://github.com/NOAA-GFDL/MOM6-examples/blob/dev/gfdl/LICENSE.md).
+For usage details, do `./editTopo.py -h`.  # Building and Installation
 
 ## General Instructions
 
