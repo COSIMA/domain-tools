@@ -1,4 +1,4 @@
-[![compilation](https://github.com/COSIMA/domain-tools/actions/workflows/compilation.yml/badge.svg)](https://github.com/COSIMA/domain-tools/actions/workflows/compilation.yml)
+[![compilation](https://github.com/COSIMA/bathymetry-tools/actions/workflows/compilation.yml/badge.svg)](https://github.com/COSIMA/bathymetry-tools/actions/workflows/compilation.yml)
 
 # Bathymetry tools
 
