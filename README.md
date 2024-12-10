@@ -1,6 +1,6 @@
 [![compilation](https://github.com/COSIMA/domain-tools/actions/workflows/compilation.yml/badge.svg)](https://github.com/COSIMA/domain-tools/actions/workflows/compilation.yml)
 
-# Domain Tools
+# Bathymetry tools
 
 Code and tools to edit and manipulate ocean model grids and topographies.
 
